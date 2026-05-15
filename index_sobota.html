@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Barcelona — sobota 16 maja: mapa z ciekawostkami</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #faf6f0; color: #1a1a1a; line-height: 1.5; }
+  header { background: linear-gradient(135deg, #c41e3a 0%, #f5a623 100%);
+    color: white; padding: 24px 20px; text-align: center; }
+  header h1 { margin: 0 0 6px 0; font-size: 1.5rem; }
+  header p { margin: 0; opacity: 0.95; font-size: 0.95rem; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 16px 40px; }
+  #map { height: 60vh; min-height: 420px; margin: 20px 0; border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+  .legend { background: white; padding: 12px 16px; border-radius: 8px;
+    margin-bottom: 16px; font-size: 0.9rem; display: flex; gap: 16px; flex-wrap: wrap;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
+  .dot.hotel { background: #6b7280; } .dot.modernismo { background: #c41e3a; }
+  .dot.ciekawostka { background: #f5a623; } .dot.kolacja { background: #16a34a; }
+  .dot.po-drodze { background: #2563eb; } .dot.atrakcja { background: #9333ea; }
+  .stops { display: grid; gap: 16px; }
+  .stop { background: white; border-radius: 12px; padding: 20px 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 5px solid #ccc; }
+  .stop.hotel { border-left-color: #6b7280; } .stop.modernismo { border-left-color: #c41e3a; }
+  .stop.ciekawostka { border-left-color: #f5a623; } .stop.kolacja { border-left-color: #16a34a; }
+  .stop.po-drodze { border-left-color: #2563eb; } .stop.atrakcja { border-left-color: #9333ea; }
+  .stop-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 8px; flex-wrap: wrap; }
+  .stop-num { background: #1a1a1a; color: white; font-weight: 700;
+    width: 32px; height: 32px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 0.9rem; flex-shrink: 0; }
+  .stop h2 { margin: 0; font-size: 1.2rem; }
+  .stop-time { color: #c41e3a; font-weight: 600; font-size: 0.9rem; }
+  .stop-summary { color: #4a4a4a; margin-bottom: 14px; font-style: italic; }
+  .trivia { display: grid; gap: 10px; margin-top: 10px; }
+  @media (min-width: 700px) { .trivia { grid-template-columns: 1fr 1fr; } }
+  .trivia-box { padding: 12px 14px; border-radius: 8px; font-size: 0.92rem; }
+  .trivia-kids { background: #fff7e6; border: 1px solid #ffd68a; }
+  .trivia-grand { background: #eef4ff; border: 1px solid #b8cdf0; }
+  .trivia-label { font-weight: 700; text-transform: uppercase; font-size: 0.7rem;
+    letter-spacing: 0.05em; margin-bottom: 6px; }
+  .trivia-kids .trivia-label { color: #b45309; }
+  .trivia-grand .trivia-label { color: #1e40af; }
+  .bonus-section { margin-top: 40px; padding-top: 24px; border-top: 3px dashed #d4af37; }
+  .bonus-section h2 { text-align: center; font-size: 1.4rem; color: #c41e3a; margin-bottom: 6px; }
+  .bonus-section p.intro { text-align: center; color: #666; margin-top: 0; margin-bottom: 24px; }
+  .bonus-card { background: white; border-radius: 12px; padding: 20px 24px; margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 5px solid #888; }
+  .bonus-card h3 { margin: 0 0 12px 0; font-size: 1.1rem; }
+  .leaflet-popup-content { font-size: 0.9rem; max-width: 280px; }
+  .pop-num { font-weight: 700; background: #1a1a1a; color: white;
+    padding: 2px 8px; border-radius: 10px; font-size: 0.8rem; margin-right: 6px; }
+  .pop-time { color: #c41e3a; font-weight: 600; font-size: 0.85rem; }
+  .footer { text-align: center; padding: 24px 16px; color: #888; font-size: 0.85rem; }
+  @media print { #map, header { display: none; } body { background: white; }
+    .stop, .bonus-card { box-shadow: none; border: 1px solid #ddd; page-break-inside: avoid; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>🐉 Sobota 16 maja 2026 — Barcelona</h1>
+  <p>Modernismo · kolacja · Magiczna Fontanna — 13 punktów z ciekawostkami + sekcja bonus</p>
+</header>
+<div class="container">
+<div class="legend">
+  <strong style="margin-right: 8px;">Legenda:</strong>
+  <span class="legend-item"><span class="dot hotel"></span> Hotel</span>
+  <span class="legend-item"><span class="dot modernismo"></span> Modernismo / Gaudí</span>
+  <span class="legend-item"><span class="dot ciekawostka"></span> Ciekawostka</span>
+  <span class="legend-item"><span class="dot po-drodze"></span> Po drodze</span>
+  <span class="legend-item"><span class="dot kolacja"></span> Kolacja</span>
+  <span class="legend-item"><span class="dot atrakcja"></span> Atrakcja wieczoru</span>
+</div>
+<div id="map"></div>
+<div class="stops">
+  <div class="stop hotel" id="stop-0">
+    <div class="stop-head">
+      <span class="stop-num">0</span>
+      <h2>Sweett Rocafort (hotel)</h2>
+      <span class="stop-time">16:50</span>
+    </div>
+    <div class="stop-summary">Wasza baza w dzielnicy Eixample. Stąd ruszacie ok. 18:00.</div>
+    <div class="trivia">
+      <div class="trivia-box trivia-kids">
+        <div class="trivia-label">🎈 Dla dzieci (6 i 9 lat)</div>
+        <div>Każdy „kwadrat” w tej dzielnicy ma <strong>8 boków zamiast 4</strong> — policzcie z balkonu! A ulica Wasza nazywa się od <strong>rycerza Rocafort</strong>, który 700 lat temu prowadził katalońskie wojsko aż do Grecji i Stambułu.</div>
+      </div>
+      <div class="trivia-box trivia-grand">
+        <div class="trivia-label">📚 Dla dziadków</div>
+        <div><strong>Dzielnica Eixample</strong> („rozszerzenie”) — plan Ildefonsa Cerdà z 1859 r., pierwszy w Europie oparty na geometrii i higienie. Kwartały dokładnie <strong>113,3 × 113,3 m</strong>, ścięte rogi (chamfery) dla światła, powietrza i widoczności. Cerdà chciał ogrodów w środku każdego kwartału — chciwi deweloperzy zabudowali. Carrer de Rocafort upamiętnia <strong>Bernata de Rocafort</strong> (XIV w.), dowódcę „Kompanii Katalońskiej” — najemników, którzy podbili Trację i Macedonię, a katalońskie wpływy w Atenach zostawili na 80 lat.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stop ciekawostka" id="stop-1">
+    <div class="stop-head">
+      <span class="stop-num">1</span>
+      <h2>Chodnik Gaudíego (Panot Gaudí)</h2>
+      <span class="stop-time">18:20</span>
+    </div>
+    <div class="stop-summary">Patrzcie pod nogi na Passeig de Gràcia — ten sześciokątny wzór to dzieło samego Gaudíego.</div>
+    <div class="trivia">
+      <div class="trivia-box trivia-kids">
+        <div class="trivia-label">🎈 Dla dzieci (6 i 9 lat)</div>
+        <div><strong>ZADANIE</strong>: spójrzcie pod buty na chodniku! Widzicie te szare sześciokątne płytki? Na każdej jest <strong>rozgwiazda, muszla i wodorost</strong>. To Gaudí zaprojektował! Kto pierwszy zobaczy wszystkie trzy?</div>
+      </div>
+      <div class="trivia-box trivia-grand">
+        <div class="trivia-label">📚 Dla dziadków</div>
+        <div><strong>Panot Gaudí</strong> — sześciokątne płytki z trzema morskimi motywami (rozgwiazda, amonit, alga). Gaudí zaprojektował je w <strong>1904 r.</strong> dla wnętrza Casa Milà. <strong>Dopiero w 1971 r.</strong> miasto Barcelona przyjęło je jako <strong>oficjalny wzór chodnika</strong> na Passeig de Gràcia. Jeden z najbardziej fotografowanych chodników na świecie. Płytki produkuje do dziś ta sama firma — Escofet.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stop modernismo" id="stop-2">
+    <div class="stop-head">
+      <span class="stop-num">2</span>
+      <h2>Casa Batlló</h2>
+      <span class="stop-time">18:25</span>
+    </div>
+    <div class="stop-summary">Gaudí, 1904–1906. „Dom-smok”.</div>
+    <div class="trivia">
+      <div class="trivia-box trivia-kids">
+        <div class="trivia-label">🎈 Dla dzieci (6 i 9 lat)</div>
+        <div>Cały dom = opowieść o <strong>św. Jerzym i smoku</strong>:<br>• dach z łusek = <strong>grzbiet smoka</strong><br>• wieżyczka z krzyżem = <strong>włócznia wbita w smoka</strong><br>• balkony = <strong>czaszki ofiar</strong><br>• kolumny przy wejściu = <strong>kości</strong><br>• dwie kolumny u wejścia wyglądają jak <strong>nogi słonia</strong><br>Lokalna nazwa: „Casa dels ossos” (Dom Kości). <strong>Sant Jordi to ulubione katalońskie święto</strong> — 23 kwietnia chłopcy dają dziewczynom róże, dziewczyny chłopcom książki.</div>
+      </div>
+      <div class="trivia-box trivia-grand">
+        <div class="trivia-label">📚 Dla dziadków</div>
+        <div>Gaudí (1904–1906) przebudował istniejącą kamienicę dla <strong>Josepa Batlló</strong> (magnat włókienniczy). Batlló chciał ją zburzyć i postawić nową — <strong>Gaudí przekonał go do remodelu</strong>. UNESCO 2005. Trzy cuda:<br>• <strong>Ani jednej prostej linii</strong> — wszystko falujące<br>• Płytki na fasadzie zmieniają kolor z niebieskozielonego u góry (niebo) na pomarańczowy u dołu (ogień) — <strong>Gaudí osobiście wybierał każdą z 330</strong><br>• Wewnętrzny świetlik (atrium) <strong>pomalowany od ciemnoniebieskiego u góry do jasnego u dołu</strong>, by światło na każdym piętrze wyglądało jednakowo<br>Reprezentacyjne wnętrza były biurami przez 50 lat, po renowacji za 70 mln € otwarte jako muzeum w 2002 r.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stop modernismo" id="stop-3">
+    <div class="stop-head">
+      <span class="stop-num">3</span>
+      <h2>Casa Amatller</h2>
+      <span class="stop-time">18:30</span>
+    </div>
+    <div class="stop-summary">Tuż obok Batlló. Puig i Cadafalch, 1898–1900. Dom rodziny czekoladników.</div>
+    <div class="trivia">
+      <div class="trivia-box trivia-kids">
+        <div class="trivia-label">🎈 Dla dzieci (6 i 9 lat)</div>
+        <div>Właściciel robił <strong>czekoladę</strong>! Firma Amatller istnieje <strong>do dziś</strong> — możecie kupić tabliczkę w sklepie na parterze tego domu (i w supermarketach). Antoniego Amatllera nazywano <strong>„Królem Czekolady”</strong>. Córka Teresa była jedną z pierwszych kobiet-fotografek — robiła sobie <strong>„selfie” już w 1900 r.</strong>, 100 lat przed iPhonem! Zostawiła <strong>4000 zdjęć</strong> z całego świata. I szukajcie na fasadzie: znowu jest tu <strong>św. Jerzy walczący ze smokiem</strong> nad drzwiami!</div>
+      </div>
+      <div class="trivia-box trivia-grand">
+        <div class="trivia-label">📚 Dla dziadków</div>
+        <div><strong>Josep Puig i Cadafalch</strong> (1898–1900) — największy rywal Gaudíego. Schodkowy szczyt = inspiracja flamandzko-niderlandzka (Antwerpia w Barcelonie). Puig i Cadafalch był też <strong>prezydentem Generalitat de Catalunya 1917–1923</strong>. Dom miał <strong>jedną z pierwszych wind w Barcelonie</strong> (1900). Po śmierci Teresy w 1960 r. rodzina przekształciła dom w Fundację Amatllera, w której można zobaczyć oryginalne wnętrza i drukować zdjęcia Teresy.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stop modernismo" id="stop-4">
+    <div class="stop-head">
+      <span class="stop-num">4</span>
+      <h2>Casa Lleó Morera</h2>
+      <span class="stop-time">18:35</span>
+    </div>
+    <div class="stop-summary">Róg Passeig de Gràcia i Consell de Cent — trzeci dom „Jabłka Niezgody”. Dziś butik Loewe.</div>
+    <div class="trivia">
+      <div class="trivia-box trivia-kids">
+        <div class="trivia-label">🎈 Dla dzieci (6 i 9 lat)</div>
+        <div><strong>Manzana de la Discordia</strong> = „Jabłko Niezgody”. Po hiszpańsku <em>manzana</em> znaczy i <strong>„kwartał ulic”</strong>, i <strong>„jabłko”</strong>! Trzech architektów zbudowało obok siebie najpiękniejsze domy w mieście — i ścigało się, jak boginie z mitów o <strong>złotym jabłku</strong>.<br><br>Patrzcie na rzeźby na fasadzie — są tam ukryte: <strong>żarówka, telefon, gramofon i aparat fotograficzny</strong>. Wszystko wynalezione tuż przed 1905 r.! Architekt chciał pokazać „cuda nowoczesności”.</div>
+      </div>
+      <div class="trivia-box trivia-grand">
+        <div class="trivia-label">📚 Dla dziadków</div>
+        <div><strong>Lluís Domènech i Montaner</strong> (1905) — trzeci wielki mistrz katalońskiego modernismo. Casa Lleó Morera zdobyła w 1906 r. miejską nagrodę <strong>„Najlepszy Budynek Roku”</strong>. Niestety historia tragiczna: w <strong>1943 r. nowy właściciel zniszczył wiele rzeźb na fasadzie</strong>, bo go „brzydziły”. Parter rozebrał potem sklep obuwniczy. Dziś dom posiada marka <strong>Loewe</strong> (luksusowa skóra) i można w środku zobaczyć oryginalne mozaiki i witraże.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stop modernismo" id="stop-5">
+    <div class="stop-head">
+      <span class="stop-num">5</span>
+      <h2>La Pedrera / Casa Milà</h2>
+      <span class="stop-time">18:55</span>
+    </div>
+    <div class="stop-summary">Ostatnie cywilne dzieło Gaudíego (1906–1912). Falujące balkony, kominy-żołnierze.</div>
+    <div class="trivia">
+      <div class="trivia-box trivia-kids">
+        <div class="trivia-label">🎈 Dla dzieci (6 i 9 lat)</div>
+        <div>Kominy na dachu = <strong>żołnierze szturmowi z Gwiezdnych Wojen</strong>! Legenda: George Lucas się nimi inspirował. Jeden komin jest udekorowany <strong>rozbitymi butelkami szampana</strong> — nazywa się „Wojownik”. Balkony z żelaza wyglądają jak <strong>wodorosty</strong> albo <strong>morskie potwory</strong>. Na dachu kręcono sceny z <strong>filmu z Jackiem Nicholsonem</strong> („Zawód: reporter”, 1975).</div>
+      </div>
+      <div class="trivia-box trivia-grand">
+        <div class="trivia-label">📚 Dla dziadków</div>
+        <div><strong>Ostatnie cywilne dzieło Gaudíego</strong> (1906–1912) — potem już tylko Sagrada. Barcelończycy go <strong>znienawidzili</strong> — nazwali „La Pedrera” (kamieniołom) jako wyzwisko. Rewolucja: <strong>brak ścian nośnych</strong> — ciężar trzymają stalowe kolumny, ściany są tylko zasłonami, mieszkania można dowolnie przebudowywać. UNESCO 1984. Skandale:<br>• Małżeństwo Milà <strong>pozwało Gaudíego do sądu</strong> za przekroczenie budżetu — musiał oddać im całe honorarium<br>• Władze miasta nałożyły kary za balkon wystający za daleko<br>• W latach 60. niemal <strong>zburzono pod biurowiec</strong> — uratowano w ostatniej chwili<br>Do dziś część apartamentów jest <strong>zamieszkana</strong> — rodzinami od 1912 r.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stop kolacja" id="stop-6">
+    <div class="stop-head">
+      <span class="stop-num">6</span>
+      <h2>Cervecería Catalana</h2>
+      <span class="stop-time">19:45</span>
+    </div>
+    <div class="stop-summary">Legendarne tapas. Przyjdźcie 19:45 — po 20:30 kolejka 30+ min.</div>
+    <div class="trivia">
+      <div class="trivia-box trivia-kids">
+        <div class="trivia-label">🎈 Dla dzieci (6 i 9 lat)</div>
+        <div>Klasyki do spróbowania: <strong>bombas</strong> (chrupiące kotleciki ziemniaczane z mięsem w środku — wyglądają jak małe bomby), <strong>patatas bravas</strong> (frytki z pikantnym sosem), <strong>croquetas</strong> (krokiety, najczęściej szynkowe). Bombas zostały wymyślone <strong>w Barcelonie w 1937 r.</strong>, podczas wojny domowej, w dzielnicy Barceloneta — stąd okrągły kształt jak bomby! <br><br><strong>Słówka po katalońsku</strong>: cześć = <em>Hola</em> (jak po hiszpańsku) · dziękuję = <em>Gràcies</em> (gra-sjes) · do widzenia = <em>Adéu</em> (a-deu) · proszę = <em>Si us plau</em> (si us plau) — spróbujcie z kelnerem, będzie zachwycony!</div>
+      </div>
+      <div class="trivia-box trivia-grand">
+        <div class="trivia-label">📚 Dla dziadków</div>
+        <div>Lokal otwarto w <strong>1985 r.</strong> — relatywnie nowy. <strong>Tapas to nie kuchnia katalońska</strong>, lecz <strong>andaluzyjska</strong> (z południa) — w Katalonii klasyki to <strong>pa amb tomàquet</strong> (chleb potarty pomidorem, czosnkiem, oliwą — narodowa „kanapka”), <strong>escalivada</strong> (pieczone warzywa) i <strong>fideuà</strong> (paella z makaronu zamiast ryżu). Jamón ibérico: najlepszy gatunek to <strong>„bellota”</strong> (świnia żywiona żołędziami), tańszy „cebo” (zbożem). Jeden plasterek bellota = nawet 8–10 €. <strong>Tipsy w Hiszpanii niewielkie</strong> — 1–2 € jeśli było dobrze.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stop po-drodze" id="stop-7">
+    <div class="stop-head">
+      <span class="stop-num">7</span>
+      <h2>Mercat de Sant Antoni</h2>
+      <span class="stop-time">20:35</span>
+    </div>
+    <div class="stop-summary">Modernistyczna hala z 1882 r. Wieczorem podświetlona — robi wrażenie.</div>
+    <div class="trivia">
+      <div class="trivia-box trivia-kids">
+        <div class="trivia-label">🎈 Dla dzieci (6 i 9 lat)</div>
+        <div>W niedzielę rano jest tu <strong>targ książek, komiksów i znaczków</strong> — kolekcjonerski raj! Pod podłogą jest prawdziwy <strong>rzymski mur sprzed 1700 lat</strong>, widać go przez szybę. A sama hala ma kształt <strong>ośmioramiennej gwiazdy</strong> — z lotu ptaka wygląda jak gwiazdka!</div>
+      </div>
+      <div class="trivia-box trivia-grand">
+        <div class="trivia-label">📚 Dla dziadków</div>
+        <div><strong>Antoni Rovira i Trias, 1882</strong> — ten sam architekt zaprojektował <strong>Plaça Reial</strong> (zobaczycie ją we wtorek). Renowacja <strong>9 lat (2009–2018)</strong> — pod halą odkryto <strong>rzymski mur obronny z III/IV w.</strong> plus pozostałości baszty z XVII w. Wszystko zachowane pod szklaną podłogą w piwnicy. Hala podczas wojny domowej (1936–39) <strong>była szpitalem polowym</strong>. Niedzielny targ książek i znaczków działa <strong>nieprzerwanie od 1936 r.</strong> — najstarszy taki targ w Hiszpanii.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stop po-drodze" id="stop-8">
+    <div class="stop-head">
+      <span class="stop-num">8</span>
+      <h2>CaixaForum</h2>
+      <span class="stop-time">20:48</span>
+    </div>
+    <div class="stop-summary">Po prawej, przed Plaça Espanya — dawna modernistyczna fabryka tekstylna, dziś bezpłatne centrum kultury.</div>
+    <div class="trivia">
+      <div class="trivia-box trivia-kids">
+        <div class="trivia-label">🎈 Dla dzieci (6 i 9 lat)</div>
+        <div>Ten budynek z czerwonej cegły z wieżyczkami to dawna <strong>fabryka tekstylna</strong>! Robiono tu materiały na ubrania. Dziś można tu wejść za darmo i są wystawy sztuki — zostawcie sobie na następny wyjazd.</div>
+      </div>
+      <div class="trivia-box trivia-grand">
+        <div class="trivia-label">📚 Dla dziadków</div>
+        <div><strong>Casaramona</strong> — modernistyczna fabryka <strong>Puiga i Cadafalcha</strong> (1911), jednego z trzech mistrzów modernismo. Otrzymała w 1913 r. nagrodę za <strong>najlepszy budynek przemysłowy roku</strong>. Po wojnie domowej była <strong>stajnią policji konnej</strong> Franco. Bank La Caixa kupił ją i przerobił w <strong>2002 r.</strong> na <strong>centrum kulturalne CaixaForum</strong> — wstęp w pełni darmowy, wystawy sztuki światowej klasy. Wejście pod szklanym daszkiem <strong>projektu Arata Isozaki</strong> (Japonia).</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stop po-drodze" id="stop-9">
+    <div class="stop-head">
+      <span class="stop-num">9</span>
+      <h2>Las Arenas</h2>
+      <span class="stop-time">20:52</span>
+    </div>
+    <div class="stop-summary">Okrągły budynek po prawej — dawna arena walk byków, dziś centrum handlowe.</div>
+    <div class="trivia">
+      <div class="trivia-box trivia-kids">
+        <div class="trivia-label">🎈 Dla dzieci (6 i 9 lat)</div>
+        <div>Dawna <strong>arena walk byków</strong>! Mogło tu wejść <strong>14 000 widzów</strong>. Można pojechać windą na samą górę — jest tam <strong>darmowy taras widokowy 360°</strong>. Zapamiętajcie na inny wyjazd.</div>
+      </div>
+      <div class="trivia-box trivia-grand">
+        <div class="trivia-label">📚 Dla dziadków</div>
+        <div>Arena z <strong>1900 r.</strong>, styl <strong>mudéjar</strong> (mauretański), wysokość <strong>96 m</strong>. Ostatnia coridda <strong>1977</strong>. Słynna walka: <strong>Manolete</strong> w 1947 r. (legenda hiszpańskiej corridy, zginął kilka miesięcy później). W <strong>2011 r.</strong> brytyjski architekt <strong>Richard Rogers</strong> (ten od Centre Pompidou w Paryżu) przerobił arenę w centrum handlowe — zachował historyczną fasadę, w środku „podniesiona” nowoczesna kopuła stojąca na 4 ogromnych słupach. Koszt: <strong>80 mln €</strong>. <strong>Korryda zakazana w Katalonii od 2010 r.</strong> — Katalończycy uznali ją za niekulturalną; w reszcie Hiszpanii zakaz zniesiono, ale Katalonia podtrzymuje.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stop po-drodze" id="stop-10">
+    <div class="stop-head">
+      <span class="stop-num">10</span>
+      <h2>Plaça d&#x27;Espanya</h2>
+      <span class="stop-time">20:55</span>
+    </div>
+    <div class="stop-summary">Plac z 1929 r. z weneckimi wieżami i fontanną Jujola.</div>
+    <div class="trivia">
+      <div class="trivia-box trivia-kids">
+        <div class="trivia-label">🎈 Dla dzieci (6 i 9 lat)</div>
+        <div>Te dwie wysokie wieże = kopia <strong>Dzwonnicy św. Marka w Wenecji</strong>. Zbudowane na wielką wystawę światową w 1929 r. — sto lat temu! Pod placem jeździ aż <strong>5 linii metra i kolei</strong> — wszyscy się tu spotykają.</div>
+      </div>
+      <div class="trivia-box trivia-grand">
+        <div class="trivia-label">📚 Dla dziadków</div>
+        <div><strong>Wystawa Powszechna 1929</strong> — drugie wielkie międzynarodowe wydarzenie Barcelony (pierwsze 1888). Fontanna pośrodku to projekt <strong>Josepa Marii Jujola</strong> (najbliższy współpracownik Gaudíego); rzeźby konne <strong>Miquela Blaya</strong> przedstawiają <strong>trzy morza Hiszpanii</strong> (Śródziemne, Atlantyckie, Kantabryjskie) i trzy główne rzeki. Cztery kolumny u stóp schodów do MNAC (symbol <strong>czterech pasów flagi katalońskiej</strong>) zostały <strong>zburzone przez Franco w 1928 r.</strong>, żeby nie psuły wystawy — zrekonstruowano w <strong>2010</strong>. Plac filmowany w <strong>„Vicky Cristina Barcelona”</strong> Woody&#x27;ego Allena.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stop atrakcja" id="stop-11">
+    <div class="stop-head">
+      <span class="stop-num">11</span>
+      <h2>Font Màgica + MNAC</h2>
+      <span class="stop-time">21:00</span>
+    </div>
+    <div class="stop-summary">Magiczna Fontanna — pokaz światło-woda-muzyka 21:00–22:00. Darmowe.</div>
+    <div class="trivia">
+      <div class="trivia-box trivia-kids">
+        <div class="trivia-label">🎈 Dla dzieci (6 i 9 lat)</div>
+        <div>Fontanna ma <strong>ponad 3000 kombinacji</strong> światła i wody. W 1929 r. <strong>nie było komputerów</strong> — jeden człowiek <strong>ręcznie obsługiwał</strong> wszystkie pompy i światła, jak organista! Grał tu <strong>Freddie Mercury z Queen</strong> w 1992 r. (otwarcie igrzysk). <br><br>Duży <strong>pałac za fontanną (MNAC)</strong> to muzeum — Salvador Dalí (sławny malarz hiszpański) żartował, że <strong>wygląda jak tort weselny</strong>.</div>
+      </div>
+      <div class="trivia-box trivia-grand">
+        <div class="trivia-label">📚 Dla dziadków</div>
+        <div>Inżynier <strong>Carles Buïgas</strong> (38 lat) zbudował to z zespołem <strong>3000 robotników</strong> w 9 miesięcy. <strong>7 milionów litrów wody</strong> w obiegu zamkniętym. Prawie zginęła w wojnie domowej (1936–39), uruchomiona ponownie 1955. Pink Floyd, Queen, Mike Oldfield, otwarcie igrzysk 1992. <strong>Fontanna stała 4 lata (2022–wrz 2025)</strong> z powodu suszy w Katalonii i remontu — Wasz wieczór to jeden z pierwszych pełnych sezonów po powrocie. <strong>Palau Nacional / MNAC</strong> ma <strong>50 000 m²</strong> — jedna z największych przestrzeni wystawowych w Europie, <strong>największa kolekcja sztuki romańskiej</strong> na świecie (freski uratowane z pirenejskich kościołów w latach 20.). Wzgórze <strong>Montjuïc</strong> to dosłownie „<strong>Góra Żydów</strong>” — w średniowieczu był tu żydowski cmentarz.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stop hotel" id="stop-12">
+    <div class="stop-head">
+      <span class="stop-num">12</span>
+      <h2>Powrót do hotelu</h2>
+      <span class="stop-time">22:15</span>
+    </div>
+    <div class="stop-summary">Spacer 10 min Gran Vią do Rocafort. Dobranoc!</div>
+    <div class="trivia">
+      <div class="trivia-box trivia-kids">
+        <div class="trivia-label">🎈 Dla dzieci (6 i 9 lat)</div>
+        <div><strong>Policzcie palmy</strong> od Plaça Espanya do hotelu — jest ich kilkadziesiąt. Kto policzy najwięcej? <strong>Drzewa</strong>, które widzicie na Gran Via to <em>platany</em> (jak w Polsce w niektórych miastach) — przywieziono je z Londynu w XIX w.</div>
+      </div>
+      <div class="trivia-box trivia-grand">
+        <div class="trivia-label">📚 Dla dziadków</div>
+        <div>Wracacie <strong>Gran Via de les Corts Catalanes</strong> — jedna z <strong>najdłuższych ulic w Europie</strong>, <strong>11 km</strong> przez całą Barcelonę. Nazwa odwołuje się do dawnego <strong>parlamentu katalońskiego (Corts Catalanes)</strong> z XIII wieku, jednego z <strong>pierwszych parlamentów w Europie</strong>. Podczas wojny domowej była celem <strong>włoskich bombardowań</strong> (Mussolini wspomagał Franco) — kilka kamienic ma jeszcze ślady po pociskach na ścianach.</div>
+      </div>
+    </div>
+  </div></div>
+<div class="bonus-section">
+  <h2>🎁 Bonus — ciekawostki na każdą chwilę spaceru</h2>
+  <p class="intro">Legendy, frazy i tradycje, których możesz użyć w dowolnym momencie wieczoru</p>
+
+  <div class="bonus-card" style="border-left-color: #c41e3a;">
+    <h3>🐲 Legenda o świętym Jerzym (Sant Jordi)</h3>
+    <div>Najważniejsza legenda Katalonii. <strong>Sant Jordi</strong> (św. Jerzy) zabił smoka, który terroryzował miasteczko. Z krwi smoka wyrosła <strong>róża</strong> i Sant Jordi podarował ją uratowanej księżniczce. Dlatego <strong>23 kwietnia</strong> (Dzień św. Jerzego) Katalończycy obchodzą święto miłości:<br>• chłopcy dają dziewczynom <strong>różę</strong><br>• dziewczyny dają chłopcom <strong>książkę</strong> (bo 23 kwietnia umarli Shakespeare i Cervantes)<br>• ulice zalewa morze książek i kwiatów<br>Motyw smoka znajdziecie po całej Barcelonie — szczególnie na Casa Batlló, Park Güell i fontannie w Ciutadelli.</div>
+  </div>
+
+  <div class="bonus-card" style="border-left-color: #f5a623;">
+    <h3>🩸 Skąd flaga Katalonii (Senyera)</h3>
+    <div>Cztery czerwone pasy na żółtym tle = jedna z <strong>najstarszych flag w Europie</strong> (XII w.). Legenda: hrabia Barcelony <strong>Wilfryd Włochaty</strong> (Guifré el Pilós) ginął w bitwie z Maurami. Cesarz Frankijski Karol Łysy zanurzył <strong>cztery palce w jego krwi</strong> i przeciągnął nimi po <strong>złotej tarczy</strong> rycerza — żeby uhonorować jego odwagę. Tak powstały cztery czerwone pasy. Wersja z <strong>gwiazdą = Estelada</strong> to flaga niepodległościowa (poza pasami widać gwiazdę).</div>
+  </div>
+
+  <div class="bonus-card" style="border-left-color: #16a34a;">
+    <h3>🍅 Co naprawdę jeść w Katalonii</h3>
+    <div><strong>Pa amb tomàquet</strong> — chleb potarty pomidorem, czosnkiem, oliwą i solą. Narodowa „kanapka”, podawana wszędzie. <br><strong>Crema catalana</strong> — kataloński odpowiednik crème brûlée (starszy niż francuski!). <br><strong>Calçots</strong> — duże zielone cebule grillowane na ogniu (sezon zima/wczesna wiosna). <br><strong>Escalivada</strong> — grillowane warzywa (papryka, bakłażan, cebula). <br><strong>Botifarra amb mongetes</strong> — kataloński kiełbas z fasolą. <br><strong>Pa de pessic</strong> — kataloński biszkopt. <br><br><strong>Słowa do zamówienia po katalońsku</strong>: <br>• prosi się: <strong>„Si us plau”</strong> (si us plau) <br>• dziękuje: <strong>„Gràcies”</strong> (gra-sjes) <br>• rachunek: <strong>„El compte”</strong> (el konte) <br>• smacznego: <strong>„Bon profit”</strong> (bon profit) — kelner Wam to powie!</div>
+  </div>
+
+  <div class="bonus-card" style="border-left-color: #2563eb;">
+    <h3>🏰 Hiszpański vs kataloński — to dwa różne języki</h3>
+    <div>Kataloński <strong>nie jest dialektem hiszpańskiego</strong> — to osobny język romański, <strong>bliższy okcytańskiemu i włoskiemu</strong> niż hiszpańskiemu. Mówi nim ok. <strong>10 mln ludzi</strong>. W Barcelonie wszystkie napisy są dwujęzyczne (katalońskie najpierw). Pod Franco (1939–75) kataloński był <strong>zakazany</strong> — nawet imion dzieci nie wolno było rejestrować po katalońsku. Po śmierci Franco wrócił z eksplozją. Kilka różnic w słowach:<br>• cześć: hiszp. <em>Hola</em> = kat. <em>Hola</em><br>• dzień dobry: hiszp. <em>Buenos días</em> = kat. <strong>„Bon dia”</strong> (bon dija)<br>• dobry wieczór: hiszp. <em>Buenas tardes</em> = kat. <strong>„Bona tarda”</strong><br>• do widzenia: hiszp. <em>Adiós</em> = kat. <strong>„Adéu”</strong> (a-deu)<br>• tak/nie: hiszp. <em>Sí/No</em> = kat. <em>Sí/No</em> (tak samo)<br>Mieszkańcy uwielbiają, gdy turyści próbują „Bon dia” zamiast „Buenos días”.</div>
+  </div>
+
+  <div class="bonus-card" style="border-left-color: #9333ea;">
+    <h3>🗼 Castellers — ludzkie wieże</h3>
+    <div>Jedna z najbardziej katalońskich tradycji — <strong>wieże z ludzi</strong>, sięgające do <strong>10 pięter wysokości</strong> (~12 m). Na samej górze stoi <strong>dziecko 5–7 lat</strong> (zwane <em>enxaneta</em>), które macha ręką po dojściu na szczyt. Tradycja z XVIII w. z miasta Valls (k. Tarragony). Wpisana na <strong>listę UNESCO</strong> w 2010 r. Latem często można zobaczyć występy na placach Barcelony — szczególnie na <strong>Plaça de Sant Jaume</strong> (Gothic Quarter, we wtorek tam będziecie). Wszyscy uczestnicy nazywają się <em>castellers</em> i tworzą podstawę wieży (tłum) plus warstwy idące w górę.</div>
+  </div>
+
+  <div class="bonus-card" style="border-left-color: #c41e3a;">
+    <h3>💃 Sardana — kataloński taniec</h3>
+    <div>Tradycyjny taniec Katalonii — <strong>w kole, trzymając się za ręce, ze skomplikowanymi krokami</strong>. Wygląda spokojnie, ale wymaga matematycznej precyzji (taneczne kroki układane w grupy 4 i 8). Tańczony do orkiestry zwanej <strong>cobla</strong> (11 muzyków, w tym charakterystyczna piskliwa <em>tenora</em>). W Barcelonie spontaniczne sardany pojawiają się <strong>w niedzielne południe przed katedrą</strong> w Gothic Quarter — być może zobaczycie we wtorek. Każdy może dołączyć — wystarczy podejść do koła i wziąć kogoś za rękę.</div>
+  </div>
+
+  <div class="bonus-card" style="border-left-color: #16a34a;">
+    <h3>⚽ FC Barcelona — „Més que un club”</h3>
+    <div>Hasło klubu: <strong>„Więcej niż klub”</strong> (Més que un club). FC Barcelona to nie tylko piłka — to <strong>symbol katalońskiej tożsamości</strong>. Pod Franco, gdy kataloński był zakazany, stadion Camp Nou był jednym z niewielu miejsc, gdzie można było bezpiecznie krzyczeć po katalońsku i pokazywać Senyerę. Klub założono w <strong>1899 r.</strong> przez Szwajcara Joana Gampera. Słynne rywalstwo z Realem Madryt (<strong>El Clásico</strong>) ma podtekst polityczny — Real = monarchia/Madryt, Barça = republika/Katalonia. Lionel Messi zagrał tu <strong>17 lat</strong> (2004–2021).</div>
+  </div>
+
+  <div class="bonus-card" style="border-left-color: #2563eb;">
+    <h3>🌃 Lokalny rytm dnia — co kiedy</h3>
+    <div><strong>Hiszpania żyje 2 godziny później niż reszta Europy.</strong> Spodziewajcie się:<br>• <strong>Śniadanie</strong>: 8–10 (lokalne kawiarnie otwierają się ~7)<br>• <strong>Lunch</strong>: 14:00–16:00 (nie 12:00!)<br>• <strong>Sjesta</strong>: 14:00–17:00 — mniejsze sklepy zamknięte<br>• <strong>Tapas / aperitif</strong>: 19:00–21:00 (la hora del vermut)<br>• <strong>Kolacja</strong>: <strong>21:00–23:00</strong> (restauracje pełne dopiero o 21)<br>• <strong>Bar/wyjście</strong>: po 23:00, kluby po 1:00<br>Turyści często przychodzą do restauracji o 19:30 i są jedyni — ale w sobotę 16 maja to nasza zaleta (brak kolejki w Cervecería!). <br><br>W niedziele większość sklepów <strong>zamknięta</strong> (oprócz restauracji, atrakcji turystycznych, dużych centrów). Apteki dyżurne (<strong>farmàcia de guàrdia</strong>) zawsze działają — szukajcie zielonego krzyża.</div>
+  </div>
+
+</div>
+<div class="footer">
+  Plan dla rodziny 6 osób · plik wygenerowany na sobotę 16.05.2026<br>
+  Możesz wydrukować tę stronę (Ctrl/Cmd+P) — sekcje są zoptymalizowane do druku.
+</div>
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const POINTS = [{"n": 0, "name": "Sweett Rocafort (hotel)", "lat": 41.3795, "lon": 2.1542, "time": "16:50", "category": "hotel", "summary": "Wasza baza w dzielnicy Eixample. Stąd ruszacie ok. 18:00.", "kids": "Każdy „kwadrat” w tej dzielnicy ma **8 boków zamiast 4** — policzcie z balkonu! A ulica Wasza nazywa się od **rycerza Rocafort**, który 700 lat temu prowadził katalońskie wojsko aż do Grecji i Stambułu.", "grandparents": "**Dzielnica Eixample** („rozszerzenie”) — plan Ildefonsa Cerdà z 1859 r., pierwszy w Europie oparty na geometrii i higienie. Kwartały dokładnie **113,3 × 113,3 m**, ścięte rogi (chamfery) dla światła, powietrza i widoczności. Cerdà chciał ogrodów w środku każdego kwartału — chciwi deweloperzy zabudowali. Carrer de Rocafort upamiętnia **Bernata de Rocafort** (XIV w.), dowódcę „Kompanii Katalońskiej” — najemników, którzy podbili Trację i Macedonię, a katalońskie wpływy w Atenach zostawili na 80 lat."}, {"n": 1, "name": "Chodnik Gaudíego (Panot Gaudí)", "lat": 41.3917, "lon": 2.1645, "time": "18:20", "category": "ciekawostka", "summary": "Patrzcie pod nogi na Passeig de Gràcia — ten sześciokątny wzór to dzieło samego Gaudíego.", "kids": "**ZADANIE**: spójrzcie pod buty na chodniku! Widzicie te szare sześciokątne płytki? Na każdej jest **rozgwiazda, muszla i wodorost**. To Gaudí zaprojektował! Kto pierwszy zobaczy wszystkie trzy?", "grandparents": "**Panot Gaudí** — sześciokątne płytki z trzema morskimi motywami (rozgwiazda, amonit, alga). Gaudí zaprojektował je w **1904 r.** dla wnętrza Casa Milà. **Dopiero w 1971 r.** miasto Barcelona przyjęło je jako **oficjalny wzór chodnika** na Passeig de Gràcia. Jeden z najbardziej fotografowanych chodników na świecie. Płytki produkuje do dziś ta sama firma — Escofet."}, {"n": 2, "name": "Casa Batlló", "lat": 41.3917, "lon": 2.1649, "time": "18:25", "category": "modernismo", "summary": "Gaudí, 1904–1906. „Dom-smok”.", "kids": "Cały dom = opowieść o **św. Jerzym i smoku**:\n• dach z łusek = **grzbiet smoka**\n• wieżyczka z krzyżem = **włócznia wbita w smoka**\n• balkony = **czaszki ofiar**\n• kolumny przy wejściu = **kości**\n• dwie kolumny u wejścia wyglądają jak **nogi słonia**\nLokalna nazwa: „Casa dels ossos” (Dom Kości). **Sant Jordi to ulubione katalońskie święto** — 23 kwietnia chłopcy dają dziewczynom róże, dziewczyny chłopcom książki.", "grandparents": "Gaudí (1904–1906) przebudował istniejącą kamienicę dla **Josepa Batlló** (magnat włókienniczy). Batlló chciał ją zburzyć i postawić nową — **Gaudí przekonał go do remodelu**. UNESCO 2005. Trzy cuda:\n• **Ani jednej prostej linii** — wszystko falujące\n• Płytki na fasadzie zmieniają kolor z niebieskozielonego u góry (niebo) na pomarańczowy u dołu (ogień) — **Gaudí osobiście wybierał każdą z 330**\n• Wewnętrzny świetlik (atrium) **pomalowany od ciemnoniebieskiego u góry do jasnego u dołu**, by światło na każdym piętrze wyglądało jednakowo\nReprezentacyjne wnętrza były biurami przez 50 lat, po renowacji za 70 mln € otwarte jako muzeum w 2002 r."}, {"n": 3, "name": "Casa Amatller", "lat": 41.3918, "lon": 2.1651, "time": "18:30", "category": "modernismo", "summary": "Tuż obok Batlló. Puig i Cadafalch, 1898–1900. Dom rodziny czekoladników.", "kids": "Właściciel robił **czekoladę**! Firma Amatller istnieje **do dziś** — możecie kupić tabliczkę w sklepie na parterze tego domu (i w supermarketach). Antoniego Amatllera nazywano **„Królem Czekolady”**. Córka Teresa była jedną z pierwszych kobiet-fotografek — robiła sobie **„selfie” już w 1900 r.**, 100 lat przed iPhonem! Zostawiła **4000 zdjęć** z całego świata. I szukajcie na fasadzie: znowu jest tu **św. Jerzy walczący ze smokiem** nad drzwiami!", "grandparents": "**Josep Puig i Cadafalch** (1898–1900) — największy rywal Gaudíego. Schodkowy szczyt = inspiracja flamandzko-niderlandzka (Antwerpia w Barcelonie). Puig i Cadafalch był też **prezydentem Generalitat de Catalunya 1917–1923**. Dom miał **jedną z pierwszych wind w Barcelonie** (1900). Po śmierci Teresy w 1960 r. rodzina przekształciła dom w Fundację Amatllera, w której można zobaczyć oryginalne wnętrza i drukować zdjęcia Teresy."}, {"n": 4, "name": "Casa Lleó Morera", "lat": 41.3914, "lon": 2.1645, "time": "18:35", "category": "modernismo", "summary": "Róg Passeig de Gràcia i Consell de Cent — trzeci dom „Jabłka Niezgody”. Dziś butik Loewe.", "kids": "**Manzana de la Discordia** = „Jabłko Niezgody”. Po hiszpańsku *manzana* znaczy i **„kwartał ulic”**, i **„jabłko”**! Trzech architektów zbudowało obok siebie najpiękniejsze domy w mieście — i ścigało się, jak boginie z mitów o **złotym jabłku**.\n\nPatrzcie na rzeźby na fasadzie — są tam ukryte: **żarówka, telefon, gramofon i aparat fotograficzny**. Wszystko wynalezione tuż przed 1905 r.! Architekt chciał pokazać „cuda nowoczesności”.", "grandparents": "**Lluís Domènech i Montaner** (1905) — trzeci wielki mistrz katalońskiego modernismo. Casa Lleó Morera zdobyła w 1906 r. miejską nagrodę **„Najlepszy Budynek Roku”**. Niestety historia tragiczna: w **1943 r. nowy właściciel zniszczył wiele rzeźb na fasadzie**, bo go „brzydziły”. Parter rozebrał potem sklep obuwniczy. Dziś dom posiada marka **Loewe** (luksusowa skóra) i można w środku zobaczyć oryginalne mozaiki i witraże."}, {"n": 5, "name": "La Pedrera / Casa Milà", "lat": 41.3953, "lon": 2.1619, "time": "18:55", "category": "modernismo", "summary": "Ostatnie cywilne dzieło Gaudíego (1906–1912). Falujące balkony, kominy-żołnierze.", "kids": "Kominy na dachu = **żołnierze szturmowi z Gwiezdnych Wojen**! Legenda: George Lucas się nimi inspirował. Jeden komin jest udekorowany **rozbitymi butelkami szampana** — nazywa się „Wojownik”. Balkony z żelaza wyglądają jak **wodorosty** albo **morskie potwory**. Na dachu kręcono sceny z **filmu z Jackiem Nicholsonem** („Zawód: reporter”, 1975).", "grandparents": "**Ostatnie cywilne dzieło Gaudíego** (1906–1912) — potem już tylko Sagrada. Barcelończycy go **znienawidzili** — nazwali „La Pedrera” (kamieniołom) jako wyzwisko. Rewolucja: **brak ścian nośnych** — ciężar trzymają stalowe kolumny, ściany są tylko zasłonami, mieszkania można dowolnie przebudowywać. UNESCO 1984. Skandale:\n• Małżeństwo Milà **pozwało Gaudíego do sądu** za przekroczenie budżetu — musiał oddać im całe honorarium\n• Władze miasta nałożyły kary za balkon wystający za daleko\n• W latach 60. niemal **zburzono pod biurowiec** — uratowano w ostatniej chwili\nDo dziś część apartamentów jest **zamieszkana** — rodzinami od 1912 r."}, {"n": 6, "name": "Cervecería Catalana", "lat": 41.3949, "lon": 2.1597, "time": "19:45", "category": "kolacja", "summary": "Legendarne tapas. Przyjdźcie 19:45 — po 20:30 kolejka 30+ min.", "kids": "Klasyki do spróbowania: **bombas** (chrupiące kotleciki ziemniaczane z mięsem w środku — wyglądają jak małe bomby), **patatas bravas** (frytki z pikantnym sosem), **croquetas** (krokiety, najczęściej szynkowe). Bombas zostały wymyślone **w Barcelonie w 1937 r.**, podczas wojny domowej, w dzielnicy Barceloneta — stąd okrągły kształt jak bomby! \n\n**Słówka po katalońsku**: cześć = *Hola* (jak po hiszpańsku) · dziękuję = *Gràcies* (gra-sjes) · do widzenia = *Adéu* (a-deu) · proszę = *Si us plau* (si us plau) — spróbujcie z kelnerem, będzie zachwycony!", "grandparents": "Lokal otwarto w **1985 r.** — relatywnie nowy. **Tapas to nie kuchnia katalońska**, lecz **andaluzyjska** (z południa) — w Katalonii klasyki to **pa amb tomàquet** (chleb potarty pomidorem, czosnkiem, oliwą — narodowa „kanapka”), **escalivada** (pieczone warzywa) i **fideuà** (paella z makaronu zamiast ryżu). Jamón ibérico: najlepszy gatunek to **„bellota”** (świnia żywiona żołędziami), tańszy „cebo” (zbożem). Jeden plasterek bellota = nawet 8–10 €. **Tipsy w Hiszpanii niewielkie** — 1–2 € jeśli było dobrze."}, {"n": 7, "name": "Mercat de Sant Antoni", "lat": 41.3793, "lon": 2.1599, "time": "20:35", "category": "po drodze", "summary": "Modernistyczna hala z 1882 r. Wieczorem podświetlona — robi wrażenie.", "kids": "W niedzielę rano jest tu **targ książek, komiksów i znaczków** — kolekcjonerski raj! Pod podłogą jest prawdziwy **rzymski mur sprzed 1700 lat**, widać go przez szybę. A sama hala ma kształt **ośmioramiennej gwiazdy** — z lotu ptaka wygląda jak gwiazdka!", "grandparents": "**Antoni Rovira i Trias, 1882** — ten sam architekt zaprojektował **Plaça Reial** (zobaczycie ją we wtorek). Renowacja **9 lat (2009–2018)** — pod halą odkryto **rzymski mur obronny z III/IV w.** plus pozostałości baszty z XVII w. Wszystko zachowane pod szklaną podłogą w piwnicy. Hala podczas wojny domowej (1936–39) **była szpitalem polowym**. Niedzielny targ książek i znaczków działa **nieprzerwanie od 1936 r.** — najstarszy taki targ w Hiszpanii."}, {"n": 8, "name": "CaixaForum", "lat": 41.3722, "lon": 2.1503, "time": "20:48", "category": "po drodze", "summary": "Po prawej, przed Plaça Espanya — dawna modernistyczna fabryka tekstylna, dziś bezpłatne centrum kultury.", "kids": "Ten budynek z czerwonej cegły z wieżyczkami to dawna **fabryka tekstylna**! Robiono tu materiały na ubrania. Dziś można tu wejść za darmo i są wystawy sztuki — zostawcie sobie na następny wyjazd.", "grandparents": "**Casaramona** — modernistyczna fabryka **Puiga i Cadafalcha** (1911), jednego z trzech mistrzów modernismo. Otrzymała w 1913 r. nagrodę za **najlepszy budynek przemysłowy roku**. Po wojnie domowej była **stajnią policji konnej** Franco. Bank La Caixa kupił ją i przerobił w **2002 r.** na **centrum kulturalne CaixaForum** — wstęp w pełni darmowy, wystawy sztuki światowej klasy. Wejście pod szklanym daszkiem **projektu Arata Isozaki** (Japonia)."}, {"n": 9, "name": "Las Arenas", "lat": 41.3759, "lon": 2.1492, "time": "20:52", "category": "po drodze", "summary": "Okrągły budynek po prawej — dawna arena walk byków, dziś centrum handlowe.", "kids": "Dawna **arena walk byków**! Mogło tu wejść **14 000 widzów**. Można pojechać windą na samą górę — jest tam **darmowy taras widokowy 360°**. Zapamiętajcie na inny wyjazd.", "grandparents": "Arena z **1900 r.**, styl **mudéjar** (mauretański), wysokość **96 m**. Ostatnia coridda **1977**. Słynna walka: **Manolete** w 1947 r. (legenda hiszpańskiej corridy, zginął kilka miesięcy później). W **2011 r.** brytyjski architekt **Richard Rogers** (ten od Centre Pompidou w Paryżu) przerobił arenę w centrum handlowe — zachował historyczną fasadę, w środku „podniesiona” nowoczesna kopuła stojąca na 4 ogromnych słupach. Koszt: **80 mln €**. **Korryda zakazana w Katalonii od 2010 r.** — Katalończycy uznali ją za niekulturalną; w reszcie Hiszpanii zakaz zniesiono, ale Katalonia podtrzymuje."}, {"n": 10, "name": "Plaça d'Espanya", "lat": 41.3754, "lon": 2.1497, "time": "20:55", "category": "po drodze", "summary": "Plac z 1929 r. z weneckimi wieżami i fontanną Jujola.", "kids": "Te dwie wysokie wieże = kopia **Dzwonnicy św. Marka w Wenecji**. Zbudowane na wielką wystawę światową w 1929 r. — sto lat temu! Pod placem jeździ aż **5 linii metra i kolei** — wszyscy się tu spotykają.", "grandparents": "**Wystawa Powszechna 1929** — drugie wielkie międzynarodowe wydarzenie Barcelony (pierwsze 1888). Fontanna pośrodku to projekt **Josepa Marii Jujola** (najbliższy współpracownik Gaudíego); rzeźby konne **Miquela Blaya** przedstawiają **trzy morza Hiszpanii** (Śródziemne, Atlantyckie, Kantabryjskie) i trzy główne rzeki. Cztery kolumny u stóp schodów do MNAC (symbol **czterech pasów flagi katalońskiej**) zostały **zburzone przez Franco w 1928 r.**, żeby nie psuły wystawy — zrekonstruowano w **2010**. Plac filmowany w **„Vicky Cristina Barcelona”** Woody'ego Allena."}, {"n": 11, "name": "Font Màgica + MNAC", "lat": 41.3711, "lon": 2.1517, "time": "21:00", "category": "atrakcja", "summary": "Magiczna Fontanna — pokaz światło-woda-muzyka 21:00–22:00. Darmowe.", "kids": "Fontanna ma **ponad 3000 kombinacji** światła i wody. W 1929 r. **nie było komputerów** — jeden człowiek **ręcznie obsługiwał** wszystkie pompy i światła, jak organista! Grał tu **Freddie Mercury z Queen** w 1992 r. (otwarcie igrzysk). \n\nDuży **pałac za fontanną (MNAC)** to muzeum — Salvador Dalí (sławny malarz hiszpański) żartował, że **wygląda jak tort weselny**.", "grandparents": "Inżynier **Carles Buïgas** (38 lat) zbudował to z zespołem **3000 robotników** w 9 miesięcy. **7 milionów litrów wody** w obiegu zamkniętym. Prawie zginęła w wojnie domowej (1936–39), uruchomiona ponownie 1955. Pink Floyd, Queen, Mike Oldfield, otwarcie igrzysk 1992. **Fontanna stała 4 lata (2022–wrz 2025)** z powodu suszy w Katalonii i remontu — Wasz wieczór to jeden z pierwszych pełnych sezonów po powrocie. **Palau Nacional / MNAC** ma **50 000 m²** — jedna z największych przestrzeni wystawowych w Europie, **największa kolekcja sztuki romańskiej** na świecie (freski uratowane z pirenejskich kościołów w latach 20.). Wzgórze **Montjuïc** to dosłownie „**Góra Żydów**” — w średniowieczu był tu żydowski cmentarz."}, {"n": 12, "name": "Powrót do hotelu", "lat": 41.3795, "lon": 2.1542, "time": "22:15", "category": "hotel", "summary": "Spacer 10 min Gran Vią do Rocafort. Dobranoc!", "kids": "**Policzcie palmy** od Plaça Espanya do hotelu — jest ich kilkadziesiąt. Kto policzy najwięcej? **Drzewa**, które widzicie na Gran Via to *platany* (jak w Polsce w niektórych miastach) — przywieziono je z Londynu w XIX w.", "grandparents": "Wracacie **Gran Via de les Corts Catalanes** — jedna z **najdłuższych ulic w Europie**, **11 km** przez całą Barcelonę. Nazwa odwołuje się do dawnego **parlamentu katalońskiego (Corts Catalanes)** z XIII wieku, jednego z **pierwszych parlamentów w Europie**. Podczas wojny domowej była celem **włoskich bombardowań** (Mussolini wspomagał Franco) — kilka kamienic ma jeszcze ślady po pociskach na ścianach."}];
+const CAT_COLORS = {
+  'hotel': '#6b7280', 'modernismo': '#c41e3a', 'ciekawostka': '#f5a623',
+  'kolacja': '#16a34a', 'po drodze': '#2563eb', 'atrakcja': '#9333ea'
+};
+const map = L.map('map').setView([41.385, 2.157], 14);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap', maxZoom: 19 }).addTo(map);
+const routePoints = POINTS.filter(p => p.category !== 'ciekawostka' || p.n === 1).map(p => [p.lat, p.lon]);
+L.polyline(routePoints, { color: '#c41e3a', weight: 3, opacity: 0.6, dashArray: '8 6' }).addTo(map);
+POINTS.forEach(p => {
+  const color = CAT_COLORS[p.category] || '#888';
+  const icon = L.divIcon({ className: 'custom-marker',
+    html: `<div style="background:${color};color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);">${p.n}</div>`,
+    iconSize: [32, 32], iconAnchor: [16, 16] });
+  const marker = L.marker([p.lat, p.lon], { icon }).addTo(map);
+  marker.bindPopup(`<div>
+      <span class="pop-num">${p.n}</span><span class="pop-time">${p.time}</span>
+      <h3 style="margin:6px 0 4px 0;">${p.name}</h3>
+      <div style="color:#555;font-size:0.85rem;">${p.summary}</div>
+      <a href="#stop-${p.n}" style="color:#c41e3a;font-size:0.85rem;font-weight:600;">↓ czytaj ciekawostki</a>
+    </div>`);
+});
+map.fitBounds(L.latLngBounds(POINTS.map(p => [p.lat, p.lon])).pad(0.05));
+</script>
+</body>
+</html>

@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Barcelona — niedziela 17 maja 2026</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --terracotta: #c45a3e;
+  --terracotta-dark: #9a3f29;
+  --ochre: #d4a949;
+  --ochre-soft: #e8c977;
+  --navy: #1a2740;
+  --navy-soft: #2c3e5d;
+  --cream: #f5ebd9;
+  --cream-pale: #faf3e6;
+  --paper: #fdf9f1;
+  --ink: #2a2620;
+  --ink-soft: #5c544a;
+  --stone: #8a8278;
+  --line: #d8cdb8;
+  --park-green: #4d8a5e;
+  --park-green-dark: #2f6440;
+  --shadow: 0 2px 8px rgba(60, 40, 20, 0.08);
+  --shadow-lift: 0 8px 28px rgba(60, 40, 20, 0.14);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Lora', Georgia, serif;
+  color: var(--ink);
+  background: var(--paper);
+  line-height: 1.65;
+  font-size: 17px;
+}
+
+/* HEADER */
+.hero {
+  background:
+    radial-gradient(ellipse at top left, rgba(77, 138, 94, 0.20), transparent 50%),
+    radial-gradient(ellipse at bottom right, rgba(196, 90, 62, 0.22), transparent 55%),
+    linear-gradient(135deg, var(--navy) 0%, var(--navy-soft) 100%);
+  color: var(--cream-pale);
+  padding: 3.5rem 1.5rem 4rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 3px;
+  background: var(--ochre);
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 3px;
+  background: var(--ochre);
+}
+
+.hero .kicker {
+  font-family: 'Lora', serif;
+  font-style: italic;
+  font-size: 0.95rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ochre-soft);
+  margin-bottom: 0.75rem;
+}
+
+.hero h1 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 700;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  line-height: 1.1;
+  margin-bottom: 1rem;
+  letter-spacing: -0.01em;
+}
+
+.hero .date {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: clamp(1.05rem, 2vw, 1.3rem);
+  color: var(--cream);
+  margin-bottom: 1.5rem;
+}
+
+.hero .summary {
+  max-width: 640px;
+  margin: 0 auto;
+  font-size: 1.05rem;
+  color: var(--cream-pale);
+  opacity: 0.9;
+}
+
+/* TIMELINE STRIP */
+.timeline {
+  background: var(--cream);
+  border-bottom: 1px solid var(--line);
+  padding: 1rem 0.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 999;
+  box-shadow: var(--shadow);
+}
+
+.timeline-scroll {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding: 0 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--stone) transparent;
+}
+
+.timeline-scroll::-webkit-scrollbar { height: 4px; }
+.timeline-scroll::-webkit-scrollbar-thumb { background: var(--stone); border-radius: 2px; }
+
+.timeline-item {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.9rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.25s;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+
+.timeline-item:hover {
+  background: var(--terracotta);
+  color: white;
+  border-color: var(--terracotta);
+  transform: translateY(-1px);
+}
+
+.timeline-item .num {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-style: italic;
+  background: var(--terracotta);
+  color: white;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.timeline-item:hover .num {
+  background: white;
+  color: var(--terracotta);
+}
+
+.timeline-item .time {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* MAP */
+#map {
+  width: 100%;
+  height: 60vh;
+  min-height: 420px;
+  z-index: 1;
+}
+
+.map-legend {
+  background: var(--cream);
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  justify-content: center;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.legend-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.15);
+}
+
+.dot-hotel { background: #5e8bff; }
+.dot-sight { background: var(--terracotta); }
+.dot-food { background: var(--ochre); }
+.dot-pass { background: var(--stone); }
+.dot-park { background: var(--park-green); }
+
+/* SECTIONS */
+.intro-banner {
+  background: var(--terracotta);
+  color: white;
+  text-align: center;
+  padding: 1.2rem 1.5rem;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 1.1rem;
+}
+
+.stops-container {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 2rem;
+}
+
+.section-divider {
+  display: flex;
+  align-items: center;
+  margin: 3rem 0 2rem;
+  gap: 1.5rem;
+}
+
+.section-divider::before, .section-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.section-divider span {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  color: var(--terracotta);
+  letter-spacing: 0.05em;
+}
+
+/* STOP CARD */
+.stop {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 2rem 2rem 1.75rem;
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow);
+  position: relative;
+  scroll-margin-top: 100px;
+  transition: box-shadow 0.3s, transform 0.3s;
+}
+
+.stop:hover { box-shadow: var(--shadow-lift); }
+.stop.highlight {
+  box-shadow: 0 0 0 3px var(--ochre), var(--shadow-lift);
+  transform: translateY(-2px);
+}
+
+.stop-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px dashed var(--line);
+}
+
+.stop-num {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-style: italic;
+  font-size: 2.5rem;
+  line-height: 1;
+  color: var(--terracotta);
+  flex-shrink: 0;
+  min-width: 60px;
+}
+
+.stop-title-block { flex: 1; }
+
+.stop-time {
+  font-size: 0.8rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ochre);
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+
+.stop h2 {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-size: clamp(1.4rem, 3vw, 1.85rem);
+  line-height: 1.15;
+  color: var(--navy);
+  margin-bottom: 0.4rem;
+}
+
+.stop-address {
+  font-style: italic;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+
+.stop-body p { margin-bottom: 1rem; }
+.stop-body p:last-child { margin-bottom: 0; }
+
+.stop-body strong { color: var(--terracotta-dark); }
+
+.section-tag {
+  display: inline-block;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: var(--terracotta);
+  padding: 0.1rem 0;
+  margin-top: 1.25rem;
+  margin-bottom: 0.35rem;
+  border-bottom: 1px solid var(--terracotta);
+  letter-spacing: 0.02em;
+}
+
+.tip-box {
+  background: var(--cream-pale);
+  border-left: 3px solid var(--ochre);
+  padding: 1rem 1.25rem;
+  margin-top: 1.25rem;
+  border-radius: 0 4px 4px 0;
+  font-size: 0.95rem;
+}
+
+.tip-box strong { color: var(--navy); }
+
+.tip-label {
+  display: block;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ochre);
+  margin-bottom: 0.4rem;
+  font-weight: 700;
+}
+
+.kids-box {
+  background: linear-gradient(135deg, #fdf4e3 0%, #faead0 100%);
+  border: 1px solid var(--ochre-soft);
+  padding: 1.1rem 1.25rem;
+  margin-top: 1.25rem;
+  border-radius: 4px;
+  position: relative;
+}
+
+.kids-label {
+  display: inline-block;
+  background: var(--ochre);
+  color: white;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  margin-bottom: 0.6rem;
+  font-weight: 600;
+}
+
+.adults-box {
+  background: #f3eee2;
+  border: 1px solid var(--line);
+  padding: 1.1rem 1.25rem;
+  margin-top: 1.25rem;
+  border-radius: 4px;
+}
+
+.adults-label {
+  display: inline-block;
+  background: var(--navy);
+  color: var(--cream-pale);
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  margin-bottom: 0.6rem;
+  font-weight: 600;
+}
+
+.history-box {
+  background: linear-gradient(135deg, #e8efe6 0%, #d6e2d3 100%);
+  border-left: 3px solid var(--park-green);
+  padding: 1.1rem 1.25rem;
+  margin-top: 1.25rem;
+  border-radius: 4px;
+}
+
+.history-label {
+  display: inline-block;
+  background: var(--park-green-dark);
+  color: var(--cream-pale);
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  margin-bottom: 0.6rem;
+  font-weight: 600;
+}
+
+.menu-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+}
+
+.menu-list li {
+  padding: 0.5rem 0;
+  border-bottom: 1px dotted var(--line);
+}
+
+.menu-list li:last-child { border: none; }
+
+.menu-list strong {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  color: var(--terracotta-dark);
+  font-size: 1.05rem;
+}
+
+/* FOOTER */
+footer {
+  background: var(--navy);
+  color: var(--cream-pale);
+  padding: 3rem 1.5rem;
+  text-align: center;
+  margin-top: 3rem;
+}
+
+footer .planned-by {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+  color: var(--ochre);
+}
+
+footer .meta {
+  font-size: 0.9rem;
+  opacity: 0.7;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+/* LEAFLET CUSTOM MARKER */
+.custom-marker {
+  background: var(--terracotta);
+  color: white;
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-style: italic;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  border: 3px solid white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.custom-marker.hotel { background: #5e8bff; }
+.custom-marker.food { background: var(--ochre); }
+.custom-marker.pass { background: var(--stone); font-size: 0.85rem; }
+.custom-marker.park { background: var(--park-green); }
+
+.leaflet-popup-content-wrapper {
+  border-radius: 6px;
+  font-family: 'Lora', Georgia, serif;
+}
+
+.leaflet-popup-content {
+  margin: 14px 18px;
+  font-size: 0.95rem;
+}
+
+.leaflet-popup-content strong {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.05rem;
+  color: var(--navy);
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+.popup-link {
+  display: inline-block;
+  margin-top: 0.6rem;
+  background: var(--terracotta);
+  color: white;
+  text-decoration: none;
+  padding: 0.35rem 0.85rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.popup-link:hover { background: var(--terracotta-dark); }
+
+/* PRINT */
+@media print {
+  .timeline, #map { display: none; }
+  .stop { page-break-inside: avoid; }
+}
+
+@media (max-width: 600px) {
+  body { font-size: 16px; }
+  .stops-container { padding: 2rem 1rem 1rem; }
+  .stop { padding: 1.5rem 1.25rem; }
+  .stop-header { gap: 0.75rem; }
+  .stop-num { font-size: 2rem; min-width: 45px; }
+  #map { height: 50vh; min-height: 360px; }
+  .hero { padding: 2.5rem 1rem 3rem; }
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="kicker">Plan dnia z rodziną</div>
+  <h1>Niedziela<br>w&nbsp;Barcelonie</h1>
+  <div class="date">17 maja 2026 · od 8:30 do 21:30</div>
+  <p class="summary">
+    Park Güell rano z mozaikową jaszczurką, spacer przez Arc de Triomf do średniowiecznego El Born, obiad z owocami morza, luźne popołudnie w Park de la Ciutadella — smoki Gaudíego, łódki, mamut i place zabaw.
+  </p>
+</header>
+
+<nav class="timeline">
+  <div class="timeline-scroll">
+    <a href="#stop-0" class="timeline-item"><span class="num">0</span><span class="time">8:30 Hotel</span></a>
+    <a href="#stop-1" class="timeline-item"><span class="num">1</span><span class="time">10:30 Jaszczurka</span></a>
+    <a href="#stop-2" class="timeline-item"><span class="num">2</span><span class="time">10:50 Sala 100 Kolumn</span></a>
+    <a href="#stop-3" class="timeline-item"><span class="num">3</span><span class="time">11:15 Falująca ławka</span></a>
+    <a href="#stop-4" class="timeline-item"><span class="num">4</span><span class="time">13:00 Pl. Catalunya</span></a>
+    <a href="#stop-5" class="timeline-item"><span class="num">5</span><span class="time">13:15 Bulwar</span></a>
+    <a href="#stop-6" class="timeline-item"><span class="num">6</span><span class="time">13:20 Arc de Triomf</span></a>
+    <a href="#stop-7" class="timeline-item"><span class="num">7</span><span class="time">13:30 El Born</span></a>
+    <a href="#stop-8" class="timeline-item"><span class="num">8</span><span class="time">13:30 Obiad</span></a>
+    <a href="#stop-9" class="timeline-item"><span class="num">9</span><span class="time">15:15 Cascada ⭐</span></a>
+    <a href="#stop-10" class="timeline-item"><span class="num">10</span><span class="time">15:45 Łódki</span></a>
+    <a href="#stop-11" class="timeline-item"><span class="num">11</span><span class="time">16:15 Mamut</span></a>
+    <a href="#stop-12" class="timeline-item"><span class="num">12</span><span class="time">16:30 Plac zabaw</span></a>
+    <a href="#stop-13" class="timeline-item"><span class="num">13</span><span class="time">17:00 Hotel</span></a>
+    <a href="#stop-14" class="timeline-item"><span class="num">14</span><span class="time">19:30 Kolacja</span></a>
+  </div>
+</nav>
+
+<div id="map"></div>
+
+<div class="map-legend">
+  <div class="legend-item"><span class="legend-dot dot-hotel"></span> Hotel</div>
+  <div class="legend-item"><span class="legend-dot dot-sight"></span> Główne atrakcje</div>
+  <div class="legend-item"><span class="legend-dot dot-park"></span> Park / wybiegane dzieci</div>
+  <div class="legend-item"><span class="legend-dot dot-food"></span> Obiad / kolacja</div>
+  <div class="legend-item"><span class="legend-dot dot-pass"></span> Mijacie po drodze</div>
+</div>
+
+<div class="intro-banner">
+  Czytajcie po kolei — każdy przystanek ma sekcję dla dzieci i dla dorosłych.
+</div>
+
+<main class="stops-container">
+
+  <article class="stop" id="stop-0">
+    <div class="stop-header">
+      <div class="stop-num">0</div>
+      <div class="stop-title-block">
+        <div class="stop-time">8:30 · Start dnia</div>
+        <h2>Sweett Rocafort</h2>
+        <div class="stop-address">Śniadanie w hotelu, wyjście 9:30</div>
+      </div>
+    </div>
+    <div class="stop-body">
+      <p>Spokojny początek — po wieczornym spacerze pierwszego dnia wszyscy zasłużyli na pełne śniadanie. Trasa do Park Güell wymaga dwóch środków transportu, ale jest płaska dla dziadków.</p>
+
+      <p class="section-tag">Dojazd do Park Güell</p>
+      <p>Metro <strong>L1 z Rocafort do Passeig de Gràcia</strong> (3 stacje, ~8 min) → wyjście na powierzchnię → <strong>autobus miejski 24</strong> sprzed Casa Milà do przystanku <strong>Ctra del Carmel - Albert Llanas</strong> (przy samej bramie parku, ~20-25 min). W niedzielę bus 24 jeździ co 10-15 min.</p>
+
+      <div class="tip-box">
+        <span class="tip-label">⚠️ Czego NIE robić</span>
+        <strong>Nie wybierajcie metra do Vallcarca</strong> — schody ruchome wciąż niedziałające w 2025/26. <strong>Nie wybierajcie metra do Lesseps</strong> — 20 min stromo pod górę, dziadkowie się umęczą. Bus 24 wjeżdża pod samą bramę parku, to klucz dla rodziny z seniorami.
+      </div>
+
+      <div class="tip-box">
+        <span class="tip-label">Plan B</span>
+        Jeśli bus 24 długo nie nadjeżdża, taksówka spod Casa Milà do Park Güell to ~10 € i 8 min jazdy. Alternatywnie z hotelu bezpośrednio taksówka 15-18 € (~15-20 min).
+      </div>
+    </div>
+  </article>
+
+  <div class="section-divider"><span>— Park Güell · slot 10:30 —</span></div>
+
+  <article class="stop" id="stop-1">
+    <div class="stop-header">
+      <div class="stop-num">1</div>
+      <div class="stop-title-block">
+        <div class="stop-time">10:30 · Pierwsze wow dnia</div>
+        <h2>Schody z Jaszczurką El Drac</h2>
+        <div class="stop-address">Strefa Monumentalna, wejście główne</div>
+      </div>
+    </div>
+    <div class="stop-body">
+      <p>Wchodzicie główną bramą, mijacie dwie bajkowe wartownie (jak pierniki z dachami trencadís) i wprost przed Wami otwierają się <strong>schody z mozaikową jaszczurką</strong>. To najsłynniejsza mozaika w Barcelonie obok dachu Casa Batlló.</p>
+
+      <div class="kids-box">
+        <span class="kids-label">Dla dzieci · TAJEMNICA</span>
+        <p><strong>Smok czy salamandra?</strong> Eksperci się kłócą do dziś! Niektórzy mówią, że to <strong>Python z mitologii greckiej</strong> (smok pilnujący wyroczni w Delfach), inni że <strong>smok Świętego Jerzego</strong> (tego samego, którego widzieliście wczoraj wieczorem na Casa Batlló!). Faktem jest jedno — to jeden z symboli Barcelony obok Sagrady Familii.</p>
+        <p><strong>Zabawa:</strong> Znajdźcie na schodach <strong>trzy fontanny</strong>. Każda kiedyś tryskała wodą: smocza głowa na środku, hełm pełen węży, drewniany pień na dole. Dziś nie zawsze działają, ale można policzyć.</p>
+        <p><strong>Klasyk fotograficzny:</strong> dziecko siedzące przy jaszczurce. Słońce z dołu, schody bez tłumu rano = idealne zdjęcie.</p>
+      </div>
+
+      <div class="history-box">
+        <span class="history-label">Historia parku</span>
+        <p>Park Güell powstał w latach <strong>1900-1914</strong> jako <strong>prywatne osiedle elity</strong> zaprojektowane przez Gaudíego dla przemysłowca <strong>Eusebiego Güella</strong>. Plan był ambitny: 60 luksusowych willi w stylu garden city dla bogatych katalońskich rodzin, z własnym targowiskiem, kościołem i szkołą.</p>
+        <p><strong>Wybudowano tylko 2 domy</strong> i nikt poza Gaudím nie chciał tu zamieszkać (zbyt daleko od centrum, „zbyt dziwnie"). Projekt finansowo zbankrutował. W 1922 r. miasto kupiło teren, w 1926 r. otwarło jako park publiczny — pół roku przed śmiercią Gaudíego pod tramwajem na Gran Via. UNESCO 1984.</p>
+      </div>
+
+      <div class="adults-box">
+        <span class="adults-label">Technika trencadís</span>
+        <p>Ta sama, którą widzieliście na fasadzie Casa Batlló. Potłuczone kafelki, talerze, butelki, nawet figurki porcelanowe wkomponowane w mozaikę. Gaudí kupował zbite resztki z fabryk w pobliskim Manresa za grosze. Każdy fragment unikalny, a razem tworzą organiczną całość. Sztuka oszczędzania i tworzenia luksusu jednocześnie.</p>
+      </div>
+    </div>
+  </article>
+
+  <article class="stop" id="stop-2">
+    <div class="stop-header">
+      <div class="stop-num">2</div>
+      <div class="stop-title-block">
+        <div class="stop-time">10:50 · Wejście do sali</div>
+        <h2>Sala 100 Kolumn</h2>
+        <div class="stop-address">Sala Hipostylowa, tuż nad schodami z jaszczurką</div>
+      </div>
+    </div>
+    <div class="stop-body">
+      <p>Po przejściu schodów z jaszczurką wchodzicie wprost w <strong>Sala Hipostilowa</strong> — sklepiona przestrzeń wsparta na masywnych kolumnach.</p>
+
+      <div class="kids-box">
+        <span class="kids-label">Dla dzieci · ZADANIE</span>
+        <p>Wbrew nazwie, <strong>kolumn jest 86, nie 100</strong>! Liczba „100" w nazwie była po prostu poetycka, brzmiała lepiej. Spróbujcie policzyć i sprawdzić, czy 9-letnia da radę bez pomyłki. Słupy są inspirowane greckim porządkiem doryckim — takim samym, jaki widać w starożytnych świątyniach w Atenach.</p>
+      </div>
+
+      <div class="adults-box">
+        <span class="adults-label">Funkcja sali</span>
+        <p>Według pierwotnego planu, ta sala miała być <strong>targowiskiem</strong> dla mieszkańców luksusowego osiedla — tu mieli kupować mleko, chleb, ryby. Dzięki temu kolumny są tak masywne (musiały dźwigać taras powyżej) i powstała przestrzeń bez ścian — żeby kupcy mogli swobodnie rozkładać stragany. Kiedy projekt osiedla upadł, sala stała się po prostu pięknym holem.</p>
+      </div>
+
+      <p class="section-tag">Patrzcie w górę</p>
+      <p>Sufit zdobią <strong>cztery wielkie medaliony z mozaiki trencadís</strong> projektu <strong>Josepa Marii Jujola</strong> — tego samego, który zaprojektował fontannę na Plaça d'Espanya, którą widzieliście wczoraj wieczorem! Każdy medalion przedstawia <strong>jedną z czterech pór roku</strong> — wiosnę, lato, jesień, zimę. Pomiędzy nimi mniejsze medaliony z księżycami i słońcami w różnych fazach.</p>
+
+      <div class="tip-box">
+        <span class="tip-label">Eksperyment akustyczny</span>
+        Stań pod jedną z kolumn i mówcie szeptem — drugi członek rodziny słyszy Was z odległości 20 m, jakby stał obok. Architekci tego nie planowali, ale efekt jest zachwycający. Dzieci uwielbiają.
+      </div>
+    </div>
+  </article>
+
+  <article class="stop" id="stop-3">
+    <div class="stop-header">
+      <div class="stop-num">3</div>
+      <div class="stop-title-block">
+        <div class="stop-time">11:15 · Panorama Barcelony</div>
+        <h2>Plaça de la Natura (Falująca Ławka)</h2>
+        <div class="stop-address">Taras nad Salą 100 Kolumn</div>
+      </div>
+    </div>
+    <div class="stop-body">
+      <p>Wychodzicie ze sali na taras powyżej — <strong>Plaça de la Natura</strong>. Wokół falująca mozaikowa ławka, w środku zielona przestrzeń, po horyzont rozciąga się cała Barcelona.</p>
+
+      <div class="kids-box">
+        <span class="kids-label">Dla dzieci · LEGENDA</span>
+        <p>Ta ławka ma <strong>110 metrów długości</strong> — to jedna z najdłuższych ławek na świecie! Kształt nie jest przypadkowy: legenda mówi, że Gaudí <strong>posadził modeli w mokrym tynku</strong>, żeby siedzenie idealnie pasowało do ludzkiego ciała. Spróbujcie — naprawdę jest wygodna.</p>
+        <p><strong>Polowanie na mozaikę:</strong> ławka zawiera kawałki <strong>potłuczonych talerzy, kubków, butelek, porcelanowych lalek</strong>. Szukajcie nietypowych fragmentów — kawałek twarzy lalki, ucho dzbanka, dno talerza z napisem. Można znaleźć dziesiątki. Kto znajdzie najdziwniejszy fragment wygrywa.</p>
+      </div>
+
+      <div class="adults-box">
+        <span class="adults-label">Genialny Jujol</span>
+        <p>Falująca ławka to dzieło <strong>Josepa Marii Jujola</strong> — najbliższego współpracownika Gaudíego. To samo nazwisko, które stoi za fontanną na Plaça d'Espanya (wczoraj wieczór) i medalionami w Sali 100 Kolumn (kilka minut temu). Jujol był rzemieślniczym geniuszem mozaiki, bez którego modernismo nie wyglądałoby tak jak wygląda. Sam projektował też kilka domów (Casa Negre, Casa Planells) — warte zobaczenia przy następnym wyjeździe.</p>
+      </div>
+
+      <p class="section-tag">Co widać z tarasu</p>
+      <p>Z balustrady można zobaczyć całą Barcelonę po Morze Śródziemne. Przy dobrej widoczności namierzcie:</p>
+      <ul class="menu-list">
+        <li><strong>Sagrada Familia</strong> — wschód, charakterystyczne wieże (jutro tam idziecie)</li>
+        <li><strong>Torre Glòries</strong> — kolorowy „banan-wieżowiec", projekt Jean Nouvela</li>
+        <li><strong>Wzgórze Montjuïc</strong> — południowy zachód, z Castell na szczycie (jutro!)</li>
+        <li><strong>Wieża Sant Jaume na MNAC</strong> — Magiczna Fontanna na zboczu (wczoraj wieczorem)</li>
+        <li><strong>Pireneje</strong> — w bardzo dobrej widoczności, ośnieżone</li>
+      </ul>
+
+      <div class="tip-box">
+        <span class="tip-label">Wyjście z parku</span>
+        Slot to <strong>jednorazowe wejście</strong>, ale wyjść można tą samą lub inną bramą. Wracajcie na przystanek bus 24, ten sam, z którego przyjechaliście. Zjazd do Plaça Catalunya ~25 min.
+      </div>
+    </div>
+  </article>
+
+  <div class="section-divider"><span>— Spacer do El Born —</span></div>
+
+  <article class="stop" id="stop-4">
+    <div class="stop-header">
+      <div class="stop-num">4</div>
+      <div class="stop-title-block">
+        <div class="stop-time">13:00 · Powrót do centrum</div>
+        <h2>Plaça Catalunya</h2>
+        <div class="stop-address">Serce Barcelony, start spaceru</div>
+      </div>
+    </div>
+    <div class="stop-body">
+      <p>Bus 24 zatrzymuje się tu po zjeździe z Park Güell. Stąd zaczynamy <strong>spacer przez Arc de Triomf do El Born</strong> na obiad.</p>
+
+      <div class="adults-box">
+        <span class="adults-label">Centrum miasta</span>
+        <p>Plaça Catalunya — serce Barcelony, łącznik między <strong>średniowieczną Starówką</strong> a XIX-wiecznym <strong>Eixample</strong>. 30 000 m², plac powstał stosunkowo niedawno — w <strong>1927 r.</strong> Wcześniej były tu chaotyczne przedmieścia bez wyraźnego planu.</p>
+        <p>Rzeźby na placu wyrzeźbił <strong>Josep Clarà</strong> w 1929 r. (tak, ta sama Wystawa Międzynarodowa, której owocem była Magiczna Fontanna). Najsłynniejsza to <strong>La Deessa</strong> („Bogini") — naga kobieta z brązu, dziś otoczona gołębiami.</p>
+      </div>
+
+      <div class="kids-box">
+        <span class="kids-label">Dla dzieci · GOŁĘBIE</span>
+        <p>Plac jest królestwem gołębi. Sprzedawcy karmy dla ptaków pomagają je zwabić — gołąb usiądzie nawet na dłoni, jeśli się go cierpliwie poczęstuje ziarnami. Dla 6-latki przygoda życia, dla 9-latki też. Z higieną tak średnio, ale na placu są fontanny do umycia rąk.</p>
+      </div>
+
+      <div class="tip-box">
+        <span class="tip-label">Trasa spaceru</span>
+        Idziemy na wschód: Plaça Catalunya → <strong>Ronda de Sant Pere</strong> → <strong>Passeig de Lluís Companys</strong> (bulwar z palmami) → <strong>Arc de Triomf</strong> → skręt na południe w <strong>Passeig de Picasso</strong> → <strong>El Born</strong>. Łącznie ok. 1,5 km, 25-30 min ze zdjęciami.
+      </div>
+    </div>
+  </article>
+
+  <article class="stop" id="stop-5">
+    <div class="stop-header">
+      <div class="stop-num">5</div>
+      <div class="stop-title-block">
+        <div class="stop-time">13:15 · Bulwar palmowy</div>
+        <h2>Passeig de Lluís Companys</h2>
+        <div class="stop-address">Bulwar prowadzący do łuku</div>
+      </div>
+    </div>
+    <div class="stop-body">
+      <p>Szeroki bulwar obstawiony palmami i modernistycznymi lampami. Płaski, szerokie chodniki, ławki co 30 metrów — wymarzony dla dziadków po porannym Parku Güell.</p>
+
+      <div class="history-box">
+        <span class="history-label">Historia, która porusza</span>
+        <p><strong>Lluís Companys</strong> był prezydentem Katalonii. W 1940 r. <strong>jedyny w historii Europy demokratycznie wybrany prezydent został rozstrzelany przez obcą dyktaturę</strong> — gestapo wydało go reżimowi Franco, a ten kazał go zastrzelić na zboczu Montjuïc (tam, gdzie idziecie jutro). Jego ostatnie słowa: <em>„Per Catalunya!"</em> („Za Katalonię").</p>
+        <p>Po śmierci Franco w 1975 r. Barcelona nazwała ten bulwar jego imieniem. To jedna z najbardziej politycznie znaczących ulic miasta. Wcześniej nazywała się Salón de San Juan.</p>
+      </div>
+
+      <div class="kids-box">
+        <span class="kids-label">Dla dzieci</span>
+        <p>Bulwar to świetne miejsce na <strong>ulicznych artystów</strong> — często grają muzykę (saxofonista, akordeonista), robią balony, malują obrazki kredą na chodniku. Możecie dać 1-2 euro do kapelusza, jeśli ktoś zagra coś, co Wam się podoba.</p>
+      </div>
+
+      <div class="adults-box">
+        <span class="adults-label">Lampy Falquésa</span>
+        <p>Modernistyczne lampy z mozaiką projektu <strong>Pere Falqués</strong> (1906) — te same co przy Plaça Universitat (wczoraj wieczorem). Każda łączy lampę z kamienną ławką z trencadís. To Falqués stworzył też lampy na Passeig de Gràcia, gdzie zaczynaliście wczorajszy wieczór.</p>
+      </div>
+    </div>
+  </article>
+
+  <article class="stop" id="stop-6">
+    <div class="stop-header">
+      <div class="stop-num">6</div>
+      <div class="stop-title-block">
+        <div class="stop-time">13:20 · Brama witania</div>
+        <h2>Arc de Triomf</h2>
+        <div class="stop-address">Łuk z 1888 r., brama Wystawy Światowej</div>
+      </div>
+    </div>
+    <div class="stop-body">
+      <p>Czerwony ceglany łuk wybudowany na <strong>pierwszą Wystawę Światową w Barcelonie</strong> (1888). Stacja metra Arc de Triomf jest dokładnie pod nim — tędy też wracacie do hotelu po Ciutadelli.</p>
+
+      <div class="kids-box">
+        <span class="kids-label">Dla dzieci · TO NIE JEST POMNIK WOJENNY</span>
+        <p>Większość łuków triumfalnych na świecie (Paryż, Rzym, Bukareszt, Berlin) upamiętnia wojnę — wojska wracające z bitwy maszerują pod łukiem. <strong>Ten jest inny</strong>. To <strong>brama powitalna</strong> dla gości Wystawy Światowej w 1888 r. Nie ma scen bitew — są sceny <strong>powitania narodów</strong>. To pokojowy łuk.</p>
+        <p><strong>Zabawa — rzeźby:</strong> Po jednej stronie łuku Barcelona wita gości („Recompensa"). Po drugiej Hiszpania przyjmuje narody świata. Na samym szczycie tarczy — <strong>herb Barcelony</strong> z 4 czerwonymi paskami na żółtym tle (legenda mówi, że to krew pierwszego hrabiego Katalonii odbita palcami na złotej tarczy króla Franków).</p>
+      </div>
+
+      <div class="adults-box">
+        <span class="adults-label">Architektura neomudejarska</span>
+        <p>Architekt <strong>Josep Vilaseca</strong> zaprojektował łuk w stylu <strong>neomudejarskim</strong> — z czerwonej cegły z motywami maurystycznymi. To bardzo katalońska decyzja: zamiast naśladować klasyczne łuki rzymskie, sięgnięto po średniowieczną tradycję półwyspu iberyjskiego. 30 metrów wysokości, <strong>cegła zamiast kamienia</strong> — niespotykana decyzja dla łuku triumfalnego, ale tańsza i charakterystyczna dla Barcelony.</p>
+      </div>
+
+      <div class="tip-box">
+        <span class="tip-label">Pomysł na zdjęcie</span>
+        Klasyczne ujęcie: rodzina pod łukiem, perspektywa na <strong>Cascadę Monumentalną w głębi parku</strong>. Z dronowych ujęć widać prostą linię: Plaça Catalunya → bulwar → łuk → kaskada — to jeden z najbardziej zaplanowanych widoków miasta.
+      </div>
+
+      <p>Po przejściu pod łukiem skręcamy w prawo (na południe) w <strong>Passeig de Picasso</strong>, wzdłuż zachodniej granicy parku Ciutadella, do El Born na obiad. Drogi ~5 min.</p>
+    </div>
+  </article>
+
+  <article class="stop" id="stop-7">
+    <div class="stop-header">
+      <div class="stop-num">7</div>
+      <div class="stop-title-block">
+        <div class="stop-time">13:30 · Wchodzimy w średniowiecze</div>
+        <h2>El Born — dzielnica turniejów</h2>
+        <div class="stop-address">Średniowieczna dzielnica Barcelony</div>
+      </div>
+    </div>
+    <div class="stop-body">
+      <p>Schodzicie z bulwaru w wąskie, średniowieczne uliczki El Born. Jedna z najstarszych i najbardziej klimatycznych dzielnic Barcelony.</p>
+
+      <div class="kids-box">
+        <span class="kids-label">Dla dzieci · SKĄD NAZWA</span>
+        <p>Słowo „<strong>born</strong>" w starym katalońskim oznaczało <strong>turniej rycerski</strong>. W XVI i XVII wieku na centralnym placu (tam, gdzie dziś Born Cultural Centre) odbywały się <strong>walki rycerzy na koniach</strong> — z włóczniami, w zbrojach, jak w bajkach. Mieszczanie przychodzili oglądać niedziele rycerskie. Stąd nazwa dzielnicy.</p>
+      </div>
+
+      <div class="history-box">
+        <span class="history-label">Dramat 1714 — historia, którą Katalończycy pamiętają</span>
+        <p>El Born to dzielnica naznaczona historyczną tragedią. W 1714 r. <strong>Barcelona była oblegana</strong> przez wojska Bourbonów Filipa V po wojnie sukcesyjnej. Po 13-miesięcznym oporze padła. Ostatni szturm: <strong>11 września 1714</strong> — dziś katalońskie święto narodowe (Diada).</p>
+        <p>Po zwycięstwie Bourboni <strong>zburzyli całą dzielnicę El Born</strong> — ok. 1000 budynków, 5000 mieszkańców wysiedlonych. Na ich miejscu wybudowali <strong>cytadelę wojskową</strong>, żeby kontrolować zbuntowane miasto z bliska. Nazwa „Ciutadella" (cytadela) parku, który zaraz zwiedzicie, pochodzi właśnie od tej budowli — symbolu opresji, którego mieszkańcy nienawidzili przez 150 lat.</p>
+        <p>W <strong>Born Cultural Centre</strong> (dawny targ z 1876 r.) można dziś zobaczyć ruiny tamtych ulic <strong>pod szklaną podłogą</strong> — odkryte podczas renowacji w 2002 r. Wstęp wolny. Dziś omijamy ze względu na obiad, ale to opcja na inny wyjazd.</p>
+      </div>
+
+      <div class="adults-box">
+        <span class="adults-label">W okolicy</span>
+        <p>Mijacie po drodze: <strong>Muzeum Picassa</strong> (Carrer Montcada 15-23, kolekcja głównie wczesnych prac, kiedy Picasso mieszkał w Barcelonie 1895-1904), <strong>Bazylikę Santa Maria del Mar</strong> („katedra ludu", XIV w., wspaniała czysta katalońska gotyka — tytułowa katedra książki „Katedra w Barcelonie" Ildefonsa Falconesa), <strong>Carrer Montcada</strong> — średniowieczną uliczkę z XIV-wiecznymi pałacami szlachty.</p>
+      </div>
+    </div>
+  </article>
+
+  <div class="section-divider"><span>— Obiad —</span></div>
+
+  <article class="stop" id="stop-8">
+    <div class="stop-header">
+      <div class="stop-num">8</div>
+      <div class="stop-title-block">
+        <div class="stop-time">13:30-15:00 · OBIAD</div>
+        <h2>La Paradeta lub Sagardi</h2>
+        <div class="stop-address">Dwa różne style, oba świetne dla rodziny</div>
+      </div>
+    </div>
+    <div class="stop-body">
+
+      <p class="section-tag">Opcja 1: La Paradeta</p>
+      <p><strong>Carrer Comercial 7</strong> · koncepcja: <strong>jak na targu rybnym</strong></p>
+      <p>Stoicie przed ladą z lodem i świeżymi rybami i owocami morza. Wskazujecie palcem co chcecie (krewetki, kalmary, ryba, małże, ośmiornica). Wagujecie, płacicie, dostajecie numerek, kuchnia grilluje i przynosi do stołu. Bez stresu z menu, bez kelnera, dzieci uwielbiają wybierać palcem.</p>
+      <p><strong>Cena:</strong> 10-18 €/danie, świeże, niezawodne. Łącznie dla rodziny ~90-110 € z napojami.</p>
+
+      <p class="section-tag">Opcja 2: Sagardi Born</p>
+      <p><strong>Carrer de l'Argenteria 62</strong>, 5 min spacerem na zachód · koncepcja: <strong>baskijskie pintxos</strong></p>
+      <p>Bar pełen małych kanapek z chlebem, każda na patyczku (tortilla, krewetka, jamón, ser, oliwka, grzyb, sardynka). Bierzecie z baru co chcecie, sami nakładacie na talerz. Kelner liczy patyczki na koniec i wystawia rachunek. <strong>Dzieci to uwielbiają</strong> bo same wybierają i są „dorosłe".</p>
+      <p><strong>Cena:</strong> 2-4 €/sztuka, łącznie 70-90 € dla rodziny.</p>
+
+      <div class="tip-box">
+        <span class="tip-label">Co wybrać?</span>
+        <strong>La Paradeta</strong> dla rodziny lubiącej owoce morza i bezpośredniość wyboru. <strong>Sagardi</strong> jeśli chcecie żeby dzieci wybierały bez pomocy i atmosfera bardziej imprezowa. Oba mają menu po angielsku, oba przyjmują rodziny z dziećmi standardowo.
+      </div>
+
+      <div class="tip-box">
+        <span class="tip-label">Obowiązkowy dodatek</span>
+        „<strong>Pa amb tomàquet</strong>" (chleb z pomidorem, oliwą i solą) — obowiązkowy w katalońskiej kuchni. Zamówcie nawet jeśli nie macie ochoty na nic innego. To kataloński chleb codzienny.
+      </div>
+
+      <p style="margin-top: 1.5rem;">Po obiedzie: <strong>2 min spaceru</strong> i jesteście przy zachodniej bramie Park de la Ciutadella.</p>
+    </div>
+  </article>
+
+  <div class="section-divider"><span>— Park de la Ciutadella —</span></div>
+
+  <article class="stop" id="stop-9">
+    <div class="stop-header">
+      <div class="stop-num">9</div>
+      <div class="stop-title-block">
+        <div class="stop-time">15:15 · ⭐ KULMINACJA POPOŁUDNIA</div>
+        <h2>Cascada Monumental</h2>
+        <div class="stop-address">Monumentalna fontanna z młodym Gaudím</div>
+      </div>
+    </div>
+    <div class="stop-body">
+      <p>Wchodzicie zachodnią bramą i po 100 m staje przed Wami monumentalna kaskada. Otwarte usta są tu standardową reakcją.</p>
+
+      <div class="kids-box">
+        <span class="kids-label">Dla dzieci · MŁODY GAUDÍ TU PRACOWAŁ</span>
+        <p>Kaskada powstała w latach <strong>1875-1881</strong>. Główny architekt to <strong>Josep Fontserè</strong>, ale jako jego student i asystent pracował tu <strong>młody Antoni Gaudí</strong> — miał 24-29 lat, jeszcze nieznany, dorabiał na studiach!</p>
+        <p><strong>To jedna z jego pierwszych prac w mieście</strong>, długo przed Casa Batlló, La Pedrerą czy Sagradą. Jaki dokładnie wkład miał Gaudí? Eksperci się spierają, ale <strong>złote smoki u podstawy fontanny</strong> są w jego stylu — kreatywne stworzenia, technika sztuki dekoracyjnej, którą rozwinął później. Możliwe, że to były jego rysunki.</p>
+      </div>
+
+      <p class="section-tag">Polowanie na elementy</p>
+      <ul class="menu-list">
+        <li><strong>4 złote smoki</strong> u podstawy — z paszczy każdego leci woda</li>
+        <li><strong>Wenus wstająca z muszli</strong> — w centrum, alegoria Aurora</li>
+        <li><strong>Kwadryga Aurory</strong> na szczycie — 4 konie ciągnące rydwan, klasyczny motyw rzymski</li>
+        <li><strong>Raki, kraby i mityczne stwory morskie</strong> — po bokach</li>
+        <li><strong>Posąg ducha morza</strong> — patrzcie głęboko w basen</li>
+      </ul>
+
+      <div class="adults-box">
+        <span class="adults-label">Kontrowersja epoki</span>
+        <p>Kaskadę wzorowano na <strong>Fontannie di Trevi w Rzymie</strong> i fontannach w Wersalu. W 1881 r., kiedy została otwarta, mieszkańcy Barcelony uznali ją za <strong>zbyt rozrzutną</strong> — Hiszpania właśnie wychodziła z kryzysu ekonomicznego, a tu wybudowali fontannę z złotem i marmurem dla samych spacerujących mieszczan. Kontrowersje umilkły wraz z Wystawą Światową 1888, kiedy się okazało, że fontanna jest magnesem na turystów.</p>
+      </div>
+
+      <p>Tuż obok kaskady — <strong>wypożyczalnia łódek</strong> na jeziorku. Idziemy tam.</p>
+    </div>
+  </article>
+
+  <article class="stop" id="stop-10">
+    <div class="stop-header">
+      <div class="stop-num">10</div>
+      <div class="stop-title-block">
+        <div class="stop-time">15:45 · Wiosłowanie</div>
+        <h2>Łódki na jeziorku</h2>
+        <div class="stop-address">Estany — sztuczne jeziorko w parku</div>
+      </div>
+    </div>
+    <div class="stop-body">
+      <p>Tuż obok kaskady, <strong>otwarta wypożyczalnia łódek 10:00-20:00</strong>. Pływacie po sztucznym jeziorku w środku parku.</p>
+
+      <p><strong>Cena:</strong> <strong>11 € za 30 minut</strong>, łódka mieści 4-5 osób. Świetna opcja dla rodziny — <strong>rodzice + dwoje dzieci</strong> wciska się komfortowo, <strong>dziadkowie zostają na ławce przy brzegu</strong> i robią zdjęcia. Albo odwrotnie, jak wolicie.</p>
+
+      <div class="kids-box">
+        <span class="kids-label">Dla dzieci · NAUKA WIOSŁOWANIA</span>
+        <p>Wiosła trzeba pchać do przodu, żeby łódka jechała do tyłu — to jest właśnie sztuka wiosłowania. Dziewięciolatek może spróbować sam, 6-latek trzyma się ławki i pomaga zauważać kierunek.</p>
+        <p><strong>Sekret:</strong> jeśli jedno wiosło ciągniecie, a drugie pchacie — łódka się obraca w miejscu. To zabawne, ale uważajcie, żeby się nie zderzyć z innymi łódkami.</p>
+      </div>
+
+      <div class="adults-box">
+        <span class="adults-label">Dzikie papugi</span>
+        <p>Wokół jeziorka mieszkają <strong>dzikie zielone papugi</strong> (<em>mnich kanapowy / monk parakeet</em>) — pochodzą z Argentyny, sprowadzone do Barcelony jako zwierzęta domowe w latach 60., uciekły z klatek i się rozmnożyły. Dziś żyją na wolności w całym mieście, są bardzo głośne, latają hałaśliwymi stadami. Jezioro to ich ulubione miejsce. Na drzewach widać zbudowane przez nie gniazda kolonialne — wielkie kuliste konstrukcje z gałązek.</p>
+      </div>
+    </div>
+  </article>
+
+  <article class="stop" id="stop-11">
+    <div class="stop-header">
+      <div class="stop-num">11</div>
+      <div class="stop-title-block">
+        <div class="stop-time">16:15 · Klasyczne zdjęcie</div>
+        <h2>Mamut</h2>
+        <div class="stop-address">Naturalnej wielkości rzeźba nad brzegiem jeziora</div>
+      </div>
+    </div>
+    <div class="stop-body">
+      <p>Naturalnej wielkości rzeźba mamuta nad brzegiem jeziora. Klasyk fotograficzny Barcelony — każdy turysta robi tu zdjęcie.</p>
+
+      <div class="kids-box">
+        <span class="kids-label">Dla dzieci · DOZWOLONE</span>
+        <p>Mamut ma <strong>5 metrów wysokości</strong> — tak duży jak prawdziwe mamuty z epoki lodowcowej. Można go obejść dookoła, wsadzić głowę między kły, wspiąć się na trąbę. <strong>Limit wspinaczki: pierwsza linia rzeźby.</strong> Wyższe wspinaczki strażnicy gwiżdżą.</p>
+      </div>
+
+      <div class="history-box">
+        <span class="history-label">Niedokończony park prehistoryczny</span>
+        <p>Rzeźba powstała w <strong>1907 r.</strong> autorstwa <strong>Miquela Dalmaua</strong> jako część ambitnego projektu „<strong>Park Prehistoryczny</strong>" — miało tu stać 8 rzeźb wymarłych zwierząt: mamut, brontosaurus, megaceros, ichthyosaurus i inne. <strong>Tylko mamut został ukończony</strong>. Reszta projektu została skasowana w kryzysie finansowym. Mamut stał się ikoną parku przypadkiem.</p>
+        <p>Co ciekawe — mamut jest <strong>anatomicznie niedokładny</strong>. Prawdziwe mamuty miały krótsze trąby i bardziej zaokrąglone ciała. Ale Dalmau pracował w czasach, kiedy paleontologia dopiero raczkowała — Cuvier i Owen dopiero co opisali wygląd tych zwierząt, a kompletne kościotrupy znaleziono dopiero dziesięciolecia później.</p>
+      </div>
+    </div>
+  </article>
+
+  <article class="stop" id="stop-12">
+    <div class="stop-header">
+      <div class="stop-num">12</div>
+      <div class="stop-title-block">
+        <div class="stop-time">16:30 · Wybiegamy dzieci</div>
+        <h2>Place zabaw i wybiegane dzieci</h2>
+        <div class="stop-address">Trzy place zabaw, bańki mydlane, ping-pong</div>
+      </div>
+    </div>
+    <div class="stop-body">
+      <p>W parku jest <strong>kilka placów zabaw</strong> rozmieszczonych przy głównych alejach. Najlepszy duży jest po wschodniej stronie jeziora — drewniane konstrukcje, huśtawki, zjeżdżalnie, piaskownice, stoły do ping-ponga.</p>
+
+      <div class="kids-box">
+        <span class="kids-label">Dla dzieci · WRESZCIE BIEGAJCIE</span>
+        <p>Po dyscyplinie poranka w Park Güell (slot czasowy, nie biegać po ławce, uważać na mozaiki), tutaj wreszcie można <strong>biegać do woli</strong>. Na trawniku często ktoś robi <strong>olbrzymie bańki mydlane</strong> — dzieci biegają za nimi godzinami, to klasyk Ciutadelli. Wystarczy 1-2 € do kapelusza i wszyscy się bawią.</p>
+      </div>
+
+      <div class="history-box">
+        <span class="history-label">Historia parku · od cytadeli do parlamentu</span>
+        <p>Park stoi na miejscu <strong>twierdzy wojskowej (Ciutadella)</strong>, którą Bourboni wybudowali po 1714 r. (pamiętacie El Born?), żeby kontrolować zbuntowaną Barcelonę z bliska. <strong>150 lat</strong> miasto nienawidziło tej cytadeli — był to symbol oprezji.</p>
+        <p>W 1869 r. wreszcie ją zburzono, w 1888 r. otwarto park na <strong>Wystawę Światową</strong> (tą samą, dla której zbudowano Arc de Triomf, pod którym przeszliście). Dziś w dawnym arsenale cytadeli mieści się <strong>Parlament Kataloński</strong> — symboliczne odzyskanie miejsca przez Katalończyków. Często można zobaczyć ochronę, polityków wchodzących do pracy.</p>
+      </div>
+
+      <div class="adults-box">
+        <span class="adults-label">Inne atrakcje parku (na inny wyjazd)</span>
+        <p><strong>Hivernacle i Umbracle</strong> — XIX-wieczne palmiarnie ze szkła i żelaza, niesamowita architektura przemysłowa. Często w renowacji, sprawdźcie wcześniej. <strong>Zoo Barcelony</strong> — w południowo-wschodnim rogu parku, ale 3-4 godziny i 25 €/os., zostawcie na inny wyjazd.</p>
+      </div>
+
+      <div class="tip-box">
+        <span class="tip-label">Wyjście</span>
+        Kierujcie się na <strong>północ przez park</strong> do bramy pod Arc de Triomf — tam stacja metra L1 prowadzi bezpośrednio do hotelu.
+      </div>
+    </div>
+  </article>
+
+  <div class="section-divider"><span>— Powrót i wieczór —</span></div>
+
+  <article class="stop" id="stop-13">
+    <div class="stop-header">
+      <div class="stop-num">13</div>
+      <div class="stop-title-block">
+        <div class="stop-time">17:00-19:30 · Przerwa</div>
+        <h2>Powrót do hotelu</h2>
+        <div class="stop-address">Metro L1 z Arc de Triomf do Rocafort</div>
+      </div>
+    </div>
+    <div class="stop-body">
+      <p>Z <strong>Arc de Triomf metro L1 bezpośrednio do Rocafort</strong> — 7 stacji bez przesiadek, ~15 min. Stacja Arc de Triomf jest dokładnie pod łukiem (zejście oznakowane).</p>
+      <p>Alternatywnie: <strong>taksówka 12-15 €</strong> bezpośrednio do hotelu (~15 min), mniej spaceru dla zmęczonych dziadków po dwóch parkach.</p>
+
+      <div class="tip-box">
+        <span class="tip-label">17:30-19:30 — DŁUGA PRZERWA</span>
+        Po Park Güell rano i 2 godzinach w Ciutadelli wszyscy zasłużyli na odpoczynek. Dzieci mogą obejrzeć bajkę, dziadkowie się przedrzemać, dorośli wypić kawę na balkonie. Jutro intensywny dzień z Sagradą Familią — dziś warto naładować baterie.
+      </div>
+    </div>
+  </article>
+
+  <article class="stop" id="stop-14">
+    <div class="stop-header">
+      <div class="stop-num">14</div>
+      <div class="stop-title-block">
+        <div class="stop-time">19:30-21:30 · Kolacja</div>
+        <h2>Ciudad Condal lub Bar Ramón</h2>
+        <div class="stop-address">Lekka kolacja blisko hotelu</div>
+      </div>
+    </div>
+    <div class="stop-body">
+
+      <p class="section-tag">Opcja 1: Ciudad Condal</p>
+      <p><strong>Rambla de Catalunya 18</strong> · ~10 min spacerem z hotelu</p>
+      <p>Siostrzane miejsce <strong>Cervecería Catalana</strong> (gdzie byliście wczoraj), te same tapas, ten sam właściciel. Jeśli wczoraj się Wam podobało, tu będzie jeszcze lepiej — mniej tłoczno niż na Mallorca, większa sala, łatwiej dostać stolik dla 6 osób.</p>
+
+      <p class="section-tag">Opcja 2: Bar Ramón</p>
+      <p><strong>Carrer de Rocafort 15</strong> · dosłownie pod hotelem</p>
+      <p>Solidny lokalny bar tapas, znacznie tańszy, bez angielskiego menu, bez turystów. To ten styl, w którym lokalsi jedzą z kolegami po pracy — głośna sala, gwar, bezpośrednia obsługa. <strong>Polecam dla autentycznego doświadczenia.</strong></p>
+
+      <p class="section-tag">Co zamówić w Bar Ramón</p>
+      <ul class="menu-list">
+        <li><strong>Patatas bravas</strong> — klasyk dla dzieci</li>
+        <li><strong>Croquetas</strong> — krokiety z szynką lub kurczakiem</li>
+        <li><strong>Jamón ibérico</strong> — dla dziadków</li>
+        <li><strong>Calamares a la romana</strong> — krążki kalmara w panierce</li>
+        <li><strong>Ensaladilla rusa</strong> — sałatka z majonezem, niespodziewanie pyszna</li>
+        <li><strong>Pan amb tomàquet</strong> — kataloński chleb codzienny</li>
+      </ul>
+      <p>Tapas po 4-6 €, łączny rachunek dla 6 osób ~70 € z napojami.</p>
+
+      <div class="tip-box">
+        <span class="tip-label">Po kolacji</span>
+        Spokojny powrót piechotą do hotelu — Bar Ramón to literalnie 30 sekund spaceru, Ciudad Condal 10 min. Wcześniejsze spanie. Jutro pobudka 8:00, wyjście 8:30, slot Sagrada Familia 9:00.
+      </div>
+
+      <p style="margin-top: 1.5rem; font-style: italic; color: var(--ink-soft); text-align: center;">
+        Plan jutra: <strong>Sagrada Familia 9:00</strong>, obiad blisko, popołudnie na Montjuïc (Castell, Telèferic, Jardins de Joan Brossa), plaża Nova Icària jako relaks, kolacja paella nad morzem. Najintensywniejszy dzień wyjazdu, ale logicznie ułożony. Śpijcie spokojnie.
+      </p>
+    </div>
+  </article>
+
+</main>
+
+<footer>
+  <p class="planned-by">Niedziela 17 maja 2026</p>
+  <p class="meta">Plan dla rodziny 2+2+2: 2 dorosłych, dzieci 6 i 9 lat, dziadkowie 70+. Dwa parki, jeden spacer ze średniowieczem, kolacja blisko hotelu. Mapa działa offline poza kafelkami mapy (te wymagają internetu).</p>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const stops = [
+  { id: 0, lat: 41.37934, lng: 2.15212, type: 'hotel', label: 'H', name: 'Sweett Rocafort', time: '8:30 · Start', brief: 'Śniadanie, wyjście 9:30. Metro L1 + bus 24 do Park Güell.' },
+  { id: 1, lat: 41.41376, lng: 2.15273, type: 'sight', label: '1', name: 'Schody z Jaszczurką El Drac', time: '10:30 Park Güell', brief: 'Najsłynniejsza mozaika Barcelony. Smok czy salamandra? Eksperci się kłócą.' },
+  { id: 2, lat: 41.41385, lng: 2.15265, type: 'sight', label: '2', name: 'Sala 100 Kolumn', time: '10:50', brief: 'Wbrew nazwie kolumn jest 86. Cztery medaliony Jujola na suficie — pory roku.' },
+  { id: 3, lat: 41.41420, lng: 2.15290, type: 'sight', label: '3', name: 'Plaça de la Natura (Falująca Ławka)', time: '11:15', brief: '110 m mozaikowej ławki Jujola + panorama całej Barcelony.' },
+  { id: 4, lat: 41.38700, lng: 2.17000, type: 'pass', label: '4', name: 'Plaça Catalunya', time: '13:00 · Start spaceru', brief: 'Powrót do centrum, stąd ruszamy pieszo przez Arc de Triomf do El Born.' },
+  { id: 5, lat: 41.39020, lng: 2.18100, type: 'pass', label: '5', name: 'Passeig de Lluís Companys', time: '13:15', brief: 'Bulwar palmowy. Companys — jedyny prezydent Europy stracony przez obcą dyktaturę.' },
+  { id: 6, lat: 41.39091, lng: 2.18014, type: 'sight', label: '6', name: 'Arc de Triomf', time: '13:20', brief: 'Czerwony ceglany łuk z 1888 r. Nie wojenny — brama powitalna na Wystawę Światową.' },
+  { id: 7, lat: 41.38520, lng: 2.18250, type: 'pass', label: '7', name: 'El Born', time: '13:30', brief: 'Średniowieczna dzielnica — kiedyś turnieje rycerskie, dziś ruiny z 1714 r. pod podłogą.' },
+  { id: 8, lat: 41.38583, lng: 2.18450, type: 'food', label: '8', name: 'La Paradeta / Sagardi', time: '13:30 OBIAD', brief: 'Wybierz: pokaż palcem rybę (Paradeta) albo nakładaj pintxos sobie sam (Sagardi).' },
+  { id: 9, lat: 41.38860, lng: 2.18530, type: 'sight', label: '9', name: 'Cascada Monumental', time: '15:15 ⭐', brief: 'Monumentalna fontanna z 1881 r. Tu pracował 24-letni Gaudí jako asystent. Złote smoki.' },
+  { id: 10, lat: 41.38833, lng: 2.18620, type: 'park', label: '10', name: 'Łódki na jeziorku', time: '15:45', brief: '11€/30min za łódkę dla 4-5 osób. Wokół dzikie zielone papugi z Argentyny.' },
+  { id: 11, lat: 41.38678, lng: 2.18626, type: 'park', label: '11', name: 'Mamut', time: '16:15', brief: '5-metrowa rzeźba z 1907 r. — jedyna ukończona z planowanego parku 8 zwierząt prehistorycznych.' },
+  { id: 12, lat: 41.38717, lng: 2.18750, type: 'park', label: '12', name: 'Place zabaw', time: '16:30', brief: 'Trzy place, bańki mydlane na trawniku, ping-pong. Wybieganie po porannej dyscyplinie.' },
+  { id: 13, lat: 41.37934, lng: 2.15212, type: 'hotel', label: 'H', name: 'Powrót do hotelu', time: '17:00 + przerwa', brief: 'Metro L1 z Arc de Triomf bezpośrednio do Rocafort. Długa przerwa 17:30-19:30.' },
+  { id: 14, lat: 41.38520, lng: 2.15530, type: 'food', label: '14', name: 'Ciudad Condal / Bar Ramón', time: '19:30 KOLACJA', brief: 'Tapas blisko hotelu. Bar Ramón pod hotelem dla autentyku, Ciudad Condal dla większej sali.' }
+];
+
+const map = L.map('map', { zoomControl: true, scrollWheelZoom: false }).setView([41.395, 2.170], 13);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  maxZoom: 19
+}).addTo(map);
+
+// Walking route — from Plaça Catalunya through Arc de Triomf to El Born and Ciutadella
+const walkingRoute = [
+  [41.38700, 2.17000], // Pl. Catalunya
+  [41.39020, 2.18100], // Bulwar
+  [41.39091, 2.18014], // Arc de Triomf
+  [41.38520, 2.18250], // El Born
+  [41.38583, 2.18450], // Lunch
+  [41.38860, 2.18530], // Cascada
+  [41.38833, 2.18620], // Łódki
+  [41.38678, 2.18626], // Mamut
+  [41.38717, 2.18750], // Plac zabaw
+  [41.39091, 2.18014]  // exit at Arc de Triomf
+];
+
+L.polyline(walkingRoute, {
+  color: '#c45a3e',
+  weight: 4,
+  opacity: 0.75,
+  dashArray: '8, 8',
+  lineCap: 'round'
+}).addTo(map);
+
+// Transport indicator line (Park Güell to Plaça Catalunya — dotted lighter)
+const transportRoute = [
+  [41.41376, 2.15273],
+  [41.38700, 2.17000]
+];
+
+L.polyline(transportRoute, {
+  color: '#8a8278',
+  weight: 2,
+  opacity: 0.5,
+  dashArray: '2, 8',
+  lineCap: 'round'
+}).addTo(map);
+
+stops.forEach(stop => {
+  const icon = L.divIcon({
+    className: '',
+    html: `<div class="custom-marker ${stop.type}">${stop.label}</div>`,
+    iconSize: [32, 32],
+    iconAnchor: [16, 16]
+  });
+
+  const popupContent = `
+    <strong>${stop.name}</strong>
+    <div style="color: #d4a949; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.4rem;">${stop.time}</div>
+    <div>${stop.brief}</div>
+    <a href="#stop-${stop.id}" class="popup-link" onclick="highlightStop(${stop.id})">Czytaj więcej →</a>
+  `;
+
+  L.marker([stop.lat, stop.lng], { icon })
+    .addTo(map)
+    .bindPopup(popupContent, { maxWidth: 280 });
+});
+
+// Fit map to all stops
+const bounds = L.latLngBounds(stops.map(s => [s.lat, s.lng]));
+map.fitBounds(bounds, { padding: [40, 40] });
+
+window.highlightStop = function(id) {
+  document.querySelectorAll('.stop').forEach(el => el.classList.remove('highlight'));
+  const target = document.getElementById('stop-' + id);
+  if (target) {
+    target.classList.add('highlight');
+    setTimeout(() => target.classList.remove('highlight'), 2500);
+  }
+};
+
+map.on('click', () => map.scrollWheelZoom.enable());
+</script>
+
+</body>
+</html>

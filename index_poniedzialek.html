@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Barcelona — poniedziałek 18 maja 2026</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --terracotta: #c45a3e;
+  --terracotta-dark: #9a3f29;
+  --ochre: #d4a949;
+  --ochre-soft: #e8c977;
+  --navy: #1a2740;
+  --navy-soft: #2c3e5d;
+  --cream: #f5ebd9;
+  --cream-pale: #faf3e6;
+  --paper: #fdf9f1;
+  --ink: #2a2620;
+  --ink-soft: #5c544a;
+  --stone: #8a8278;
+  --line: #d8cdb8;
+  --park-green: #4d8a5e;
+  --park-green-dark: #2f6440;
+  --sea-blue: #2c6580;
+  --shadow: 0 2px 8px rgba(60, 40, 20, 0.08);
+  --shadow-lift: 0 8px 28px rgba(60, 40, 20, 0.14);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Lora', Georgia, serif;
+  color: var(--ink);
+  background: var(--paper);
+  line-height: 1.65;
+  font-size: 17px;
+}
+
+.hero {
+  background:
+    radial-gradient(ellipse at top left, rgba(212, 169, 73, 0.20), transparent 50%),
+    radial-gradient(ellipse at bottom right, rgba(44, 101, 128, 0.25), transparent 55%),
+    linear-gradient(135deg, var(--navy) 0%, var(--navy-soft) 100%);
+  color: var(--cream-pale);
+  padding: 3.5rem 1.5rem 4rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before, .hero::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 3px;
+  background: var(--ochre);
+}
+.hero::before { top: 1.5rem; }
+.hero::after { bottom: 1.5rem; }
+
+.hero .kicker {
+  font-family: 'Lora', serif;
+  font-style: italic;
+  font-size: 0.95rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ochre-soft);
+  margin-bottom: 0.75rem;
+}
+.hero h1 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 700;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  line-height: 1.1;
+  margin-bottom: 1rem;
+  letter-spacing: -0.01em;
+}
+.hero .date {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: clamp(1.05rem, 2vw, 1.3rem);
+  color: var(--cream);
+  margin-bottom: 1.5rem;
+}
+.hero .summary {
+  max-width: 640px;
+  margin: 0 auto;
+  font-size: 1.05rem;
+  color: var(--cream-pale);
+  opacity: 0.9;
+}
+
+.timeline {
+  background: var(--cream);
+  border-bottom: 1px solid var(--line);
+  padding: 1rem 0.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 999;
+  box-shadow: var(--shadow);
+}
+.timeline-scroll {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding: 0 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--stone) transparent;
+}
+.timeline-scroll::-webkit-scrollbar { height: 4px; }
+.timeline-scroll::-webkit-scrollbar-thumb { background: var(--stone); border-radius: 2px; }
+.timeline-item {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.9rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.25s;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+.timeline-item:hover {
+  background: var(--terracotta);
+  color: white;
+  border-color: var(--terracotta);
+  transform: translateY(-1px);
+}
+.timeline-item .num {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-style: italic;
+  background: var(--terracotta);
+  color: white;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+.timeline-item:hover .num { background: white; color: var(--terracotta); }
+.timeline-item .time { font-weight: 600; white-space: nowrap; }
+
+#map {
+  width: 100%;
+  height: 60vh;
+  min-height: 420px;
+  z-index: 1;
+}
+
+.map-legend {
+  background: var(--cream);
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  justify-content: center;
+}
+.legend-item { display: flex; align-items: center; gap: 0.5rem; }
+.legend-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.15);
+}
+.dot-hotel { background: #5e8bff; }
+.dot-sight { background: var(--terracotta); }
+.dot-food { background: var(--ochre); }
+.dot-pass { background: var(--stone); }
+.dot-park { background: var(--park-green); }
+
+.intro-banner {
+  background: var(--terracotta);
+  color: white;
+  text-align: center;
+  padding: 1.2rem 1.5rem;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 1.1rem;
+}
+
+.stops-container {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 2rem;
+}
+
+.section-divider {
+  display: flex;
+  align-items: center;
+  margin: 3rem 0 2rem;
+  gap: 1.5rem;
+}
+.section-divider::before, .section-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.section-divider span {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  color: var(--terracotta);
+  letter-spacing: 0.05em;
+}
+
+.stop {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 2rem 2rem 1.75rem;
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow);
+  position: relative;
+  scroll-margin-top: 100px;
+  transition: box-shadow 0.3s, transform 0.3s;
+}
+.stop:hover { box-shadow: var(--shadow-lift); }
+.stop.highlight {
+  box-shadow: 0 0 0 3px var(--ochre), var(--shadow-lift);
+  transform: translateY(-2px);
+}
+
+.stop.mega {
+  background: linear-gradient(135deg, #fefcf7 0%, #faf3e6 100%);
+  border: 2px solid var(--terracotta);
+}
+
+.stop-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px dashed var(--line);
+}
+.stop-num {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-style: italic;
+  font-size: 2.5rem;
+  line-height: 1;
+  color: var(--terracotta);
+  flex-shrink: 0;
+  min-width: 60px;
+}
+.stop.mega .stop-num { font-size: 3rem; }
+.stop-title-block { flex: 1; }
+.stop-time {
+  font-size: 0.8rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ochre);
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+.stop h2 {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-size: clamp(1.4rem, 3vw, 1.85rem);
+  line-height: 1.15;
+  color: var(--navy);
+  margin-bottom: 0.4rem;
+}
+.stop-address {
+  font-style: italic;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+
+.stop-body p { margin-bottom: 1rem; }
+.stop-body p:last-child { margin-bottom: 0; }
+.stop-body strong { color: var(--terracotta-dark); }
+
+.section-tag {
+  display: inline-block;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: var(--terracotta);
+  padding: 0.1rem 0;
+  margin-top: 1.25rem;
+  margin-bottom: 0.35rem;
+  border-bottom: 1px solid var(--terracotta);
+  letter-spacing: 0.02em;
+}
+
+.tip-box {
+  background: var(--cream-pale);
+  border-left: 3px solid var(--ochre);
+  padding: 1rem 1.25rem;
+  margin-top: 1.25rem;
+  border-radius: 0 4px 4px 0;
+  font-size: 0.95rem;
+}
+.tip-box strong { color: var(--navy); }
+.tip-label {
+  display: block;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ochre);
+  margin-bottom: 0.4rem;
+  font-weight: 700;
+}
+
+.kids-box {
+  background: linear-gradient(135deg, #fdf4e3 0%, #faead0 100%);
+  border: 1px solid var(--ochre-soft);
+  padding: 1.1rem 1.25rem;
+  margin-top: 1.25rem;
+  border-radius: 4px;
+}
+.kids-label {
+  display: inline-block;
+  background: var(--ochre);
+  color: white;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  margin-bottom: 0.6rem;
+  font-weight: 600;
+}
+
+.adults-box {
+  background: #f3eee2;
+  border: 1px solid var(--line);
+  padding: 1.1rem 1.25rem;
+  margin-top: 1.25rem;
+  border-radius: 4px;
+}
+.adults-label {
+  display: inline-block;
+  background: var(--navy);
+  color: var(--cream-pale);
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  margin-bottom: 0.6rem;
+  font-weight: 600;
+}
+
+.history-box {
+  background: linear-gradient(135deg, #e8efe6 0%, #d6e2d3 100%);
+  border-left: 3px solid var(--park-green);
+  padding: 1.1rem 1.25rem;
+  margin-top: 1.25rem;
+  border-radius: 4px;
+}
+.history-label {
+  display: inline-block;
+  background: var(--park-green-dark);
+  color: var(--cream-pale);
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  margin-bottom: 0.6rem;
+  font-weight: 600;
+}
+
+.unusual-box {
+  background: linear-gradient(135deg, #f4e8e2 0%, #ecd9cf 100%);
+  border-left: 3px solid var(--terracotta);
+  padding: 1.1rem 1.25rem;
+  margin-top: 1.25rem;
+  border-radius: 4px;
+}
+.unusual-label {
+  display: inline-block;
+  background: var(--terracotta);
+  color: white;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  margin-bottom: 0.6rem;
+  font-weight: 600;
+}
+
+.menu-list, .feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+}
+.menu-list li, .feature-list li {
+  padding: 0.5rem 0;
+  border-bottom: 1px dotted var(--line);
+}
+.menu-list li:last-child, .feature-list li:last-child { border: none; }
+.menu-list strong {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  color: var(--terracotta-dark);
+  font-size: 1.05rem;
+}
+
+.magic-square {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  max-width: 240px;
+  margin: 1rem auto;
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+}
+.magic-square div {
+  background: var(--navy);
+  color: var(--cream-pale);
+  padding: 0.8rem;
+  text-align: center;
+  font-size: 1.3rem;
+  border-radius: 4px;
+}
+.magic-square-caption {
+  text-align: center;
+  font-style: italic;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  margin-top: 0.3rem;
+}
+
+footer {
+  background: var(--navy);
+  color: var(--cream-pale);
+  padding: 3rem 1.5rem;
+  text-align: center;
+  margin-top: 3rem;
+}
+footer .planned-by {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+  color: var(--ochre);
+}
+footer .meta {
+  font-size: 0.9rem;
+  opacity: 0.7;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.custom-marker {
+  background: var(--terracotta);
+  color: white;
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-style: italic;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  border: 3px solid white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.custom-marker.hotel { background: #5e8bff; }
+.custom-marker.food { background: var(--ochre); }
+.custom-marker.pass { background: var(--stone); font-size: 0.85rem; }
+.custom-marker.park { background: var(--park-green); }
+.custom-marker.mega {
+  width: 42px;
+  height: 42px;
+  font-size: 1.15rem;
+  border: 4px solid white;
+  box-shadow: 0 3px 12px rgba(196, 90, 62, 0.6);
+}
+
+.leaflet-popup-content-wrapper { border-radius: 6px; font-family: 'Lora', Georgia, serif; }
+.leaflet-popup-content { margin: 14px 18px; font-size: 0.95rem; }
+.leaflet-popup-content strong {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.05rem;
+  color: var(--navy);
+  display: block;
+  margin-bottom: 0.3rem;
+}
+.popup-link {
+  display: inline-block;
+  margin-top: 0.6rem;
+  background: var(--terracotta);
+  color: white;
+  text-decoration: none;
+  padding: 0.35rem 0.85rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.popup-link:hover { background: var(--terracotta-dark); }
+
+@media print {
+  .timeline, #map { display: none; }
+  .stop { page-break-inside: avoid; }
+}
+
+@media (max-width: 600px) {
+  body { font-size: 16px; }
+  .stops-container { padding: 2rem 1rem 1rem; }
+  .stop { padding: 1.5rem 1.25rem; }
+  .stop-header { gap: 0.75rem; }
+  .stop-num { font-size: 2rem; min-width: 45px; }
+  #map { height: 50vh; min-height: 360px; }
+  .hero { padding: 2.5rem 1rem 3rem; }
+  .magic-square div { font-size: 1.1rem; padding: 0.6rem; }
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="kicker">Najintensywniejszy dzień wyjazdu</div>
+  <h1>Poniedziałek<br>w&nbsp;Barcelonie</h1>
+  <div class="date">18 maja 2026 · od 8:00 do 21:30</div>
+  <p class="summary">
+    Sagrada Familia w 100. rocznicę śmierci Gaudíego, obiad w cieniu największego architekta świata, Montjuïc z zamkiem i kolejką linową, plac zabaw poety, plaża zbudowana na utopijnej Ikarii, paella z atramentem kalmara o zachodzie słońca.
+  </p>
+</header>
+
+<nav class="timeline">
+  <div class="timeline-scroll">
+    <a href="#stop-0" class="timeline-item"><span class="num">0</span><span class="time">8:00 Hotel</span></a>
+    <a href="#stop-1" class="timeline-item"><span class="num">1</span><span class="time">9:00 Sagrada ⭐</span></a>
+    <a href="#stop-2" class="timeline-item"><span class="num">2</span><span class="time">11:00 Av. de Gaudí</span></a>
+    <a href="#stop-3" class="timeline-item"><span class="num">3</span><span class="time">11:00 Obiad</span></a>
+    <a href="#stop-4" class="timeline-item"><span class="num">4</span><span class="time">12:45 Funicular</span></a>
+    <a href="#stop-5" class="timeline-item"><span class="num">5</span><span class="time">13:00 Telèferic</span></a>
+    <a href="#stop-6" class="timeline-item"><span class="num">6</span><span class="time">13:15 Castell ⭐</span></a>
+    <a href="#stop-7" class="timeline-item"><span class="num">7</span><span class="time">15:00 Mirador</span></a>
+    <a href="#stop-8" class="timeline-item"><span class="num">8</span><span class="time">15:30 Joan Brossa</span></a>
+    <a href="#stop-9" class="timeline-item"><span class="num">9</span><span class="time">17:00 Plaża</span></a>
+    <a href="#stop-10" class="timeline-item"><span class="num">10</span><span class="time">17:30 Złota Ryba</span></a>
+    <a href="#stop-11" class="timeline-item"><span class="num">11</span><span class="time">17:30 Nova Icària</span></a>
+    <a href="#stop-12" class="timeline-item"><span class="num">12</span><span class="time">19:30 Kolacja</span></a>
+    <a href="#stop-13" class="timeline-item"><span class="num">13</span><span class="time">21:00 Hotel</span></a>
+  </div>
+</nav>
+
+<div id="map"></div>
+
+<div class="map-legend">
+  <div class="legend-item"><span class="legend-dot dot-hotel"></span> Hotel</div>
+  <div class="legend-item"><span class="legend-dot dot-sight"></span> Główne atrakcje</div>
+  <div class="legend-item"><span class="legend-dot dot-park"></span> Park / plaża</div>
+  <div class="legend-item"><span class="legend-dot dot-food"></span> Obiad / kolacja</div>
+  <div class="legend-item"><span class="legend-dot dot-pass"></span> Po drodze</div>
+</div>
+
+<div class="intro-banner">
+  Tu jest najwięcej do czytania ze wszystkich dni — Sagrada zasługuje na własną opowieść.
+</div>
+
+<main class="stops-container">
+
+  <article class="stop" id="stop-0">
+    <div class="stop-header">
+      <div class="stop-num">0</div>
+      <div class="stop-title-block">
+        <div class="stop-time">8:00 · Start dnia</div>
+        <h2>Sweett Rocafort</h2>
+        <div class="stop-address">Wcześniejsze śniadanie, wyjście 8:30</div>
+      </div>
+    </div>
+    <div class="stop-body">
+      <p>Dziś bez luksusu długiego śniadania — slot Sagrady o 9:00, lepiej dotrzeć 10-15 min wcześniej z dokumentami w ręku. Po przylocie energetyczne śniadanie, kawa, butelka wody.</p>
+
+      <p class="section-tag">Dojazd do Sagrady</p>
+      <p>Metro <strong>L1 z Rocafort → Universitat</strong> (1 stacja) → przesiadka <strong>L2 → Sagrada Família</strong>. Razem 15-20 min. Wejście od <strong>Carrer de la Marina</strong> (Fasada Narodzenia, wschodnia strona) — to ta strona, gdzie poranne światło jest najpiękniejsze.</p>
+
+      <div class="tip-box">
+        <span class="tip-label">PRZED WYJŚCIEM Z HOTELU</span>
+        Pobierzcie aplikację <strong>„Sagrada Família Official"</strong> przez Wi-Fi w hotelu. Audioguide jest tylko w aplikacji, dostępny <strong>po polsku</strong>. Weźcie słuchawki — każdy swoje, żeby nie przeszkadzać sobie nawzajem. Naładowane telefony, powerbank jeśli macie.
+      </div>
+
+      <div class="tip-box">
+        <span class="tip-label">DOKUMENTY</span>
+        Zabierzcie <strong>paszporty dzieci</strong> — przy biletach dla dzieci do 11 lat mogą poprosić o potwierdzenie wieku. Bilet dla każdego z dorosłych i dziadków (z legitymacją senior 65+ jeśli macie).
+      </div>
+    </div>
+  </article>
+
+  <div class="section-divider"><span>— Sagrada Familia · slot 9:00 —</span></div>
+
+  <article class="stop mega" id="stop-1">
+    <div class="stop-header">
+      <div class="stop-num">1</div>
+      <div class="stop-title-block">
+        <div class="stop-time">9:00-11:00 · ⭐ 100. ROCZNICA GAUDÍEGO</div>
+        <h2>Sagrada Familia</h2>
+        <div class="stop-address">Carrer de Mallorca 401 · wejście od Carrer de la Marina</div>
+      </div>
+    </div>
+    <div class="stop-body">
+
+      <p>Po prawej tysiące słów. Czytajcie spokojnie — przy każdej rzeźbie warto wiedzieć co widzicie. Sagrada to nie jeden kościół — to <strong>historia, śmierć, mit, matematyka i utopia naraz</strong>.</p>
+
+      <p class="section-tag">Krótki rys historyczny</p>
+      <p>Sagrada zaczęta w 1882 r. — ale <strong>Gaudí NIE był pierwszym architektem</strong>. Projektant <strong>Francisco de Paula del Villar</strong> pokłócił się z fundacją po roku i odszedł. <strong>Gaudí przejął projekt w 1883 r. mając 31 lat</strong> i przeprojektował wszystko. Pracował nad nią <strong>43 lata</strong> aż do śmierci w 1926 r.</p>
+      <p>Kiedy umarł, było gotowe <strong>15-25% budowli</strong>. Reszta to dzieło jego następców, którzy próbują wiernie kontynuować jego myśl. <strong>2026 to setna rocznica śmierci Gaudíego</strong> — Wasz wyjazd przypada akurat na ten moment.</p>
+
+      <div class="unusual-box">
+        <span class="unusual-label">Mało znana historia · Śmierć</span>
+        <p><strong>7 czerwca 1926 r.</strong> Gaudí szedł pieszo na nieszpory do kościoła Sant Felip Neri. Na Gran Via potrącił go tramwaj.</p>
+        <p>Był ubrany tak skromnie (był wegetarianinem, sypiał na podłodze pracowni, jadł oszczędnie), że <strong>taksówkarze pomyśleli, że to żebrak i odmówili go zabrać do szpitala</strong>. Trafił w końcu do szpitala dla biednych. <strong>Rozpoznano go dopiero po 24 godzinach</strong>, kiedy znajomi go odnaleźli. Mimo opieki umarł 10 czerwca, mając 73 lata.</p>
+        <p><strong>50 000 mieszkańców Barcelony szło za jego trumną</strong> przez miasto. Pochowano go w <strong>krypcie Sagrady</strong>, gdzie leży do dziś — niewiele katedr na świecie ma swojego architekta pochowanego w środku.</p>
+      </div>
+
+      <div class="unusual-box">
+        <span class="unusual-label">Mało znana historia · Spalone plany</span>
+        <p>W <strong>1936 r.</strong>, w czasie wojny domowej, do pracowni Gaudíego wtargnęli anarchiści. <strong>Spalili wszystkie jego plany, modele, fotografie i rysunki</strong>. Po 50 latach pracy — w 6 godzin wszystko stracone.</p>
+        <p>Architekci, którzy kontynuowali budowę po wojnie, musieli <strong>odtworzyć projekt z pamięci, zachowanych fotografii i kawałków modeli</strong> wyciągniętych ze zgliszcz. Dyskusja „czy obecna Sagrada to jeszcze Gaudí?" trwa do dziś.</p>
+      </div>
+
+      <div class="unusual-box">
+        <span class="unusual-label">Aktualność 2026</span>
+        <p><strong>W lutym 2026 zamontowano krzyż na wieży Jezusa Chrystusa</strong> — 172,5 m. <strong>Sagrada Familia stała się najwyższym budynkiem religijnym świata</strong>, wyprzedzając katedrę w Ulm (Niemcy, 161 m), która dzierżyła rekord przez 130 lat. Wieża z krzyżem jest tym, co widać z każdego punktu Barcelony.</p>
+        <p><strong>W 2025 r. papież Franciszek ogłosił Gaudíego „Czcigodnym" (Venerable)</strong> — pierwszy krok do beatyfikacji. Jeśli zostanie świętym, będzie pierwszym katalońskim świętym-architektem w historii.</p>
+      </div>
+
+      <div class="kids-box">
+        <span class="kids-label">Dla dzieci · POLOWANIE NA UKRYTE STWORZENIA</span>
+        <p>Gaudí ukrył na fasadzie dziesiątki zwierząt. Macie audioguide po polsku w aplikacji, ale też możecie szukać sami:</p>
+        <ul class="feature-list">
+          <li><strong>Dwa żółwie</strong> podtrzymujące kolumny pod Fasadą Narodzenia: <strong>żółw morski</strong> od strony morza, <strong>żółw lądowy</strong> od strony gór. Powolne ruchy żółwi symbolizują powolny rozwój kościoła — budowla rośnie tak powoli jak żółw idzie.</li>
+          <li><strong>Kameleony</strong> na każdym rogu — symbol zmiany i Boga ukrytego w wielu postaciach.</li>
+          <li><strong>Ślimaki</strong> w drobnych szczegółach — wieczność i cierpliwość.</li>
+          <li><strong>33 anioły</strong> dookoła (33 to wiek Chrystusa, ta liczba powraca wszędzie).</li>
+          <li><strong>Wszystkie litery hebrajskie</strong> ukryte w rzeźbach Pasji.</li>
+        </ul>
+        <p><strong>Zabawa konkursowa:</strong> kto znajdzie najwięcej zwierząt na fasadach.</p>
+      </div>
+
+      <div class="kids-box">
+        <span class="kids-label">Dla dzieci · KWADRAT MAGICZNY</span>
+        <p>Na Fasadzie Pasji jest kwadrat 4×4 z liczbami. <strong>Każdy wiersz, kolumna i przekątna sumuje się do 33</strong> (wiek Chrystusa przy ukrzyżowaniu). Spróbujcie sami:</p>
+        <div class="magic-square">
+          <div>1</div><div>14</div><div>14</div><div>4</div>
+          <div>11</div><div>7</div><div>6</div><div>9</div>
+          <div>8</div><div>10</div><div>10</div><div>5</div>
+          <div>13</div><div>2</div><div>3</div><div>15</div>
+        </div>
+        <div class="magic-square-caption">Każda kombinacja 4 sąsiadujących liczb daje 33</div>
+        <p><strong>Wyzwanie dla 9-latki:</strong> standardowy kwadrat magiczny sumowałby się do 34 — Subirachs (rzeźbiarz) <strong>celowo powtórzył dwie liczby (10 i 14)</strong>, żeby uzyskać 33. Czy znajdziecie wszystkie 16 sposobów uzyskania 33? (4 wiersze + 4 kolumny + 2 przekątne + 4 narożniki + 2 kwadraty 2×2 = 16!)</p>
+      </div>
+
+      <p class="section-tag">Trzy fasady, trzech autorów</p>
+      <ul class="feature-list">
+        <li><strong>Fasada Narodzenia (wschód)</strong> — <strong>jedyna ukończona przez samego Gaudíego</strong> przed śmiercią. Pełna życia, kwiatów, zwierząt, anielskich orkiestr. To <strong>tu pada poranne światło</strong>, dlatego wchodzicie tędy.</li>
+        <li><strong>Fasada Pasji (zachód)</strong> — projekt <strong>Josepa Marii Subirachsa</strong>, lata 80-te. Surowa, kanciasta, niemal kubistyczna. Bardzo kontrowersyjna — nie pasuje stylem do Gaudíego. Ale to było zamierzone: sam Gaudí napisał, że ta fasada ma być <strong>„przerażająca i naga"</strong>. <strong>Subirachs ukrył tu portret samego Gaudíego</strong> jako jedną z postaci sceny.</li>
+        <li><strong>Fasada Chwały (południe)</strong> — w trakcie budowy. Kiedy będzie gotowa, miasto będzie musiało <strong>wyburzyć całe bloki kamienic</strong> żeby zrobić jej widok. To <strong>nierozwiązany konflikt</strong> z mieszkańcami do dziś.</li>
+      </ul>
+
+      <div class="adults-box">
+        <span class="adults-label">Wnętrze · las kolumn</span>
+        <p>Gaudí inspirował się <strong>lasem</strong>. Kolumny rozgałęziają się jak drzewa, witraże filtrują światło jak korony drzew. Witraże od strony wschodniej mają <strong>ciepłe kolory</strong> (poranek: pomarańcz, żółć), od zachodniej <strong>chłodne</strong> (zachód: niebieskie, fioletowe). O 11:00 światło jest najpiękniejsze.</p>
+        <p>Kolumny pochylają się pod różnymi kątami — Gaudí wyliczył ich kąt nachylenia przy pomocy <strong>modeli z wiszących łańcuchów</strong> z odważnikami. Sfotografował model do góry nogami — z łańcuchów wyszły idealne łuki katenoidalne (matematyczna krzywa). To było <strong>parametryczne projektowanie 100 lat przed komputerami</strong>.</p>
+      </div>
+
+      <div class="adults-box">
+        <span class="adults-label">18 wież · pełna symbolika</span>
+        <p>Sagrada będzie miała <strong>dokładnie 18 wież</strong> przy ukończeniu:</p>
+        <ul class="feature-list">
+          <li><strong>12 wież apostolskich</strong> — najniższe, dla 12 apostołów (4 na każdą z 3 fasad)</li>
+          <li><strong>4 wieże ewangelistów</strong> — wyższe, z symbolami: lew (św. Marek), byk (św. Łukasz), anioł (św. Mateusz), orzeł (św. Jan)</li>
+          <li><strong>1 wieża Maryi</strong></li>
+          <li><strong>1 wieża Jezusa Chrystusa</strong> — najwyższa, 172,5 m, dokończona w 2026</li>
+        </ul>
+        <p>Wieże mają <strong>dzwony</strong> projektowane przez Gaudíego — kiedy bazylika będzie gotowa, będą grać Te Deum.</p>
+      </div>
+
+      <div class="adults-box">
+        <span class="adults-label">Finansowanie</span>
+        <p><strong>Sagrada powstaje wyłącznie z biletów turystycznych i datków wiernych. Ani jednego euro z budżetu państwa czy Kościoła</strong>. Roczne wpływy: ok. 90 mln €, z czego 25 mln idzie na budowę, reszta na utrzymanie. Wpłacacie 26 € — kawałek następnej kolumny.</p>
+        <p>Oczekiwany koniec budowy: <strong>2030-2032</strong> (przesunęło się z 2026 z powodu COVID). Cała budowa: <strong>150 lat</strong> — nadal szybsza niż Notre Dame (180 lat) i o stulecia szybsza niż katedra w Kolonii (632 lata).</p>
+      </div>
+
+    </div>
+  </article>
+
+  <div class="section-divider"><span>— Obiad pod cieniem mistrza —</span></div>
+
+  <article class="stop" id="stop-2">
+    <div class="stop-header">
+      <div class="stop-num">2</div>
+      <div class="stop-title-block">
+        <div class="stop-time">11:00 · Po drodze</div>
+        <h2>Avinguda de Gaudí</h2>
+        <div class="stop-address">Pieszy bulwar między dwoma UNESCO</div>
+      </div>
+    </div>
+    <div class="stop-body">
+      <p>Pieszy bulwar nazwany imieniem architekta, prowadzi prosto z Sagrady do drugiego UNESCO w okolicy — szpitala Sant Pau.</p>
+
+      <div class="adults-box">
+        <span class="adults-label">Bonus w okolicy</span>
+        <p>Na końcu Av. de Gaudí (~600 m od Sagrady) stoi <strong>Hospital de la Santa Creu i Sant Pau</strong> — <strong>najpiękniejszy szpital świata</strong>, projekt <strong>Lluísa Domènecha i Montanera</strong> (1902-1930). To <strong>drugie UNESCO</strong> w tej dzielnicy, mniej znane niż Sagrada, dlatego mniej zatłoczone.</p>
+        <p>Architekt wybudował <strong>12 pawilonów modernistycznych</strong>, każdy inny, połączonych podziemnymi tunelami. <strong>Działał jako szpital do 2009 r.</strong> — pacjenci leżeli między arcydziełami secesji! Dziś można zwiedzać (15 €). Na inny wyjazd — dziś czasu brak.</p>
+      </div>
+
+      <div class="kids-box">
+        <span class="kids-label">Dla dzieci</span>
+        <p>Bulwar Gaudíego ma na chodniku <strong>te same kafelki z rozgwiazdami i ślimakami</strong>, które widzieliście w sobotę na Passeig de Gràcia. Można pobawić się grą „nie nastąpić na fugi" — jak w klasykach dzieciństwa.</p>
+      </div>
+    </div>
+  </article>
+
+  <article class="stop" id="stop-3">
+    <div class="stop-header">
+      <div class="stop-num">3</div>
+      <div class="stop-title-block">
+        <div class="stop-time">11:00-12:30 · OBIAD</div>
+        <h2>El Tastet de l'Artur lub El Glop Gaudí</h2>
+        <div class="stop-address">3-5 min od Sagrady, dwa różne style</div>
+      </div>
+    </div>
+    <div class="stop-body">
+
+      <p class="section-tag">Opcja 1: El Tastet de l'Artur</p>
+      <p><strong>Carrer de Lepant 273</strong> · 3 min od Sagrady · ocena 4,5+</p>
+      <p>Domowy klimat, mała sala, gotują jak w katalońskim domu. Specjały: <strong>fricandó</strong> (cielęcina duszona w sosie z grzybami), <strong>bacalao a la llauna</strong> (dorsz pieczony pod chrupiącą skórką). <strong>15-20 €/danie</strong>, atmosfera autentyczna, mniej turystyczna.</p>
+
+      <p class="section-tag">Opcja 2: El Glop Gaudí</p>
+      <p><strong>Av. de Gaudí 44-46</strong> · 5 min od Sagrady · obsługa rodzin z dziećmi</p>
+      <p>Większa sala, menu w wielu językach, doświadczeni z rodzinami. <strong>Paella morska 18-22 €/os.</strong>, <strong>escalivada</strong> (warzywa grillowane), <strong>butifarra</strong> (kataloński kiełbasa) z fasolą.</p>
+
+      <div class="tip-box">
+        <span class="tip-label">Dla dzieci NA DESER</span>
+        <strong>Crema catalana</strong> — kataloński odpowiednik crème brûlée. Cytrynowo-cynamonowy krem z chrupiącą skorupką cukru, którą się trzaska łyżką. Dzieci uwielbiają trzaskanie. Cukier się karmelizuje palnikiem dopiero przy stole.
+      </div>
+
+      <div class="unusual-box">
+        <span class="unusual-label">Niespotykane · Paella ≠ paella</span>
+        <p><strong>„Paella" jest tak naprawdę walencka, nie katalońska</strong>. W Katalonii mówią po prostu <strong>„arròs"</strong> (ryż).</p>
+        <p><strong>Oryginalna paella valenciana</strong> to ryż z <strong>kurczakiem i królikiem</strong>, BEZ owoców morza! Tradycyjnie też z fasolą garrofó i tabella. To, co podają w turystycznych miejscach jako „paella" (z krewetkami, mięsem i wszystkim naraz), to <strong>hybrydowa wersja dla zagranicznych gości</strong>.</p>
+        <p><strong>Co jest naprawdę katalońskie:</strong></p>
+        <ul class="feature-list">
+          <li><strong>Arròs negre</strong> — ryż z atramentem kalmara, czarny jak smoła, delikatny morski smak</li>
+          <li><strong>Arròs a banda</strong> — ryż gotowany w bulionie rybnym, podawany osobno (a banda = osobno)</li>
+          <li><strong>Fideuà</strong> — jak paella, ale z cienkim makaronem zamiast ryżu (ostro katalońska)</li>
+        </ul>
+        <p>Zamówcie autentyk wieczorem nad morzem — będziecie wiedzieli, co próbujecie.</p>
+      </div>
+    </div>
+  </article>
+
+  <div class="section-divider"><span>— Montjuïc —</span></div>
+
+  <article class="stop" id="stop-4">
+    <div class="stop-header">
+      <div class="stop-num">4</div>
+      <div class="stop-title-block">
+        <div class="stop-time">12:45 · Po drodze w górę</div>
+        <h2>Funicular de Montjuïc</h2>
+        <div class="stop-address">Stacja Paral·lel · 2 min jazdy w tunelu</div>
+      </div>
+    </div>
+    <div class="stop-body">
+      <p>Z Sagrady metro <strong>L2 → przesiadka L3 do Paral·lel</strong> → wjazd <strong>Funicular de Montjuïc</strong> w górę. <strong>Wliczony w T-Familiar</strong>, więc nie potrzebujecie osobnego biletu.</p>
+
+      <div class="kids-box">
+        <span class="kids-label">Dla dzieci · POCIĄG NA UKOS</span>
+        <p>Funikular to <strong>pociąg, który wjeżdża pod kątem 45°</strong>. Wagon ma <strong>podłogę schodkową</strong>, żeby pasażerowie stali poziomo, podczas gdy pociąg jedzie ukośnie. Pomyślcie o tym jak o windzie zamienionej w pociąg, jadącej po szynach.</p>
+        <p>2 minuty jazdy, w ciemnym tunelu — pierwsi pasażerowie w 1928 r. uważali to za niesamowicie nowoczesne. Dziś dzieci często ledwo zauważają, że są w funikularze.</p>
+      </div>
+
+      <div class="adults-box">
+        <span class="adults-label">Historia</span>
+        <p>Wybudowany w <strong>1928 r.</strong> na <strong>Międzynarodową Wystawę 1929 r.</strong> — tę samą, której owocami były Magiczna Fontanna (sobota), Plaça d'Espanya, MNAC. Zrenowowany 2007. <strong>Pokonuje 152 m różnicy wysokości w 2 minuty.</strong></p>
+      </div>
+    </div>
+  </article>
+
+  <article class="stop" id="stop-5">
+    <div class="stop-header">
+      <div class="stop-num">5</div>
+      <div class="stop-title-block">
+        <div class="stop-time">13:00 · Kolejka linowa</div>
+        <h2>Telèferic de Montjuïc</h2>
+        <div class="stop-address">Stacja Parc Montjuïc → Castell · 8 min, 750 m</div>
+      </div>
+    </div>
+    <div class="stop-body">
+      <p>Wsiadacie w nowoczesne <strong>8-osobowe gondole szklane</strong>. To samo w sobie jest atrakcją.</p>
+
+      <p class="section-tag">Cena</p>
+      <p>Dorosły <strong>~17 €</strong> w obie strony (online <strong>~14,40 € z 10% zniżką</strong>), dziecko 4-12 zniżka, do 4 lat gratis. <strong>Razem dla rodziny ~80-90 €</strong>.</p>
+
+      <div class="tip-box">
+        <span class="tip-label">⚠️ UWAGA — to NIE jest w T-Familiar</span>
+        Telèferic Montjuïc to <strong>prywatny operator</strong>, osobny bilet. NIE jest w karcie T-Familiar ani w Hola BCN. Kupcie online z 10% zniżką na <strong>telefericdemontjuic.cat</strong> — w kasie cena pełna.
+      </div>
+
+      <div class="kids-box">
+        <span class="kids-label">Dla dzieci · JAZDA ŻYCIA</span>
+        <p>Kabiny są <strong>całkowicie szklane</strong>, z widokiem 360°. 8 minut jazdy, na wysokości <strong>do 80 m nad ziemią</strong>. Widać:</p>
+        <ul class="feature-list">
+          <li><strong>Port Barcelony</strong> — największy port wycieczkowych statków w Europie</li>
+          <li><strong>Sagradę Familię</strong> — z lotu ptaka, tam, gdzie byliście rano</li>
+          <li><strong>Morze po horyzont</strong>, czasem Mallorca w bardzo dobrej widoczności</li>
+          <li><strong>Cmentarz Montjuïc</strong> wycięty w skale (poniżej)</li>
+          <li><strong>Statki kontenerowe</strong> wpływające do portu</li>
+        </ul>
+        <p>Lepsze niż karuzela w wesołym miasteczku.</p>
+      </div>
+
+      <div class="adults-box">
+        <span class="adults-label">Historia</span>
+        <p>Obecny telèferic powstał w <strong>2007 r.</strong>, zastępując oryginalny z 1972 r. (z 1929 r. działał inny system od portu — ten widać w niektórych starych zdjęciach). Operator to prywatna firma, dlatego cena jest osobna.</p>
+        <p>Klasyczna katalońska kombinacja: <strong>państwowy funicular (publiczna infrastruktura podstawowa) + prywatny telèferic (luksusowa nadbudówka)</strong>.</p>
+      </div>
+    </div>
+  </article>
+
+  <article class="stop mega" id="stop-6">
+    <div class="stop-header">
+      <div class="stop-num">6</div>
+      <div class="stop-title-block">
+        <div class="stop-time">13:15-15:00 · ⭐ Twierdza z mrocznych kart historii</div>
+        <h2>Castell de Montjuïc</h2>
+        <div class="stop-address">XVII-wieczna twierdza na szczycie wzgórza</div>
+      </div>
+    </div>
+    <div class="stop-body">
+      <p><strong>Cena: dorosły 12 €, dzieci do 16 gratis</strong> — razem ~48 € dla rodziny. Otwarte codziennie 10:00-20:00.</p>
+
+      <div class="kids-box">
+        <span class="kids-label">Dla dzieci · TWIERDZA Z BAJEK</span>
+        <p>Castell ma wszystko, co powinien mieć prawdziwy zamek:</p>
+        <ul class="feature-list">
+          <li><strong>Most zwodzony nad fosą</strong> — kiedyś prawdziwy ruchomy</li>
+          <li><strong>Cztery bastiony w kształcie gwiazdy</strong> — typowa fortyfikacja Vauban, taka sama jak w innych europejskich zamkach XVII w.</li>
+          <li><strong>Stare działa</strong> wystawione na dziedzińcu — można dotknąć! Niektóre są z XVIII w. z herbami koronnymi</li>
+          <li><strong>Chorągiew katalońska</strong> łopocąca na najwyższej wieży</li>
+          <li><strong>Panoramiczny taras 360°</strong> z widokiem na całe miasto, port i morze</li>
+        </ul>
+      </div>
+
+      <div class="history-box">
+        <span class="history-label">Mroczna historia · dla dorosłych</span>
+        <p>Ten zamek jest jednym z <strong>najbardziej traumatycznych miejsc</strong> w pamięci Katalończyków. <strong>Nie był zbudowany żeby bronić miasta — był zbudowany żeby kontrolować miasto</strong>. Działa zawsze celowały W BARCELONĘ, nie w morze.</p>
+
+        <p><strong>1640 · pierwsza fortyfikacja</strong> — zbudowana w czasie rebelii katalońskiej przeciwko Hiszpanii (Guerra dels Segadors). Po przegranej Katalonia musiała sama opłacać twierdzę nad swoim miastem.</p>
+
+        <p><strong>1751 · obecna struktura</strong> — Bourboni (ta sama dynastia, która zburzyła El Born po 1714) przebudowali zamek w obecną gwiazdową strukturę. Cel: trzymać Barcelonę w ryzach.</p>
+
+        <p><strong>1842 · bombardowanie własnego miasta</strong> — zamek <strong>bombardował Barcelonę przez 13 godzin</strong>, żeby stłumić powstanie robotników. Uszkodzonych ponad 1000 budynków. Pamiętane do dziś jako symbol opresji państwa wobec własnych obywateli.</p>
+
+        <p><strong>1939-1960 · egzekucje frankistowskie</strong> — po wojnie domowej Franco używał Castell jako miejsca egzekucji. <strong>173 republikańskich więźniów zostało tu rozstrzelanych</strong>.</p>
+
+        <p><strong>15 października 1940 · egzekucja Companysa</strong> — pamiętacie z niedzieli? <strong>Lluís Companys</strong>, prezydent Katalonii, ekstradowany przez nazistowskie gestapo do reżimu Franco, <strong>zastrzelony tu o świcie</strong>. <strong>Jedyny w historii Europy demokratycznie wybrany prezydent stracony przez obcą dyktaturę</strong>. W fosie zamku jest dziś <strong>tablica pamiątkowa</strong> w miejscu egzekucji.</p>
+
+        <p><strong>2007 · odzyskanie</strong> — zamek wreszcie przekazany pod kontrolę miasta po 270 latach kontroli wojskowej. <strong>Flaga katalońska łopocze tam, gdzie wcześniej hiszpańska</strong>. Symbolika odzyskania.</p>
+      </div>
+
+      <div class="tip-box">
+        <span class="tip-label">Co zwiedzić</span>
+        Dziedziniec z działami, taras panoramiczny (TU najlepsze zdjęcia z całego wyjazdu), małe muzeum historii zamku, schody na bastion. Półtorej godziny w spokojnym tempie wystarczy. <strong>Bez windy</strong>, ale schody łagodne — dziadkowie powinni iść spokojnie, są ławki.
+      </div>
+
+      <div class="tip-box">
+        <span class="tip-label">Sprawa wrażliwa</span>
+        Tablica Companysa w fosie to miejsce, w którym <strong>można porozmawiać z 9-latkiem o demokracji, dyktaturze i pamięci</strong>, w sposób spokojny i bez przerysowania. Niektóre rodziny zostawiają tam kwiat. Inni po prostu się zatrzymują na minutę.
+      </div>
+    </div>
+  </article>
+
+  <article class="stop" id="stop-7">
+    <div class="stop-header">
+      <div class="stop-num">7</div>
+      <div class="stop-title-block">
+        <div class="stop-time">15:00 · Zejście wśród sosen</div>
+        <h2>Mirador del Migdia</h2>
+        <div class="stop-address">Punkt widokowy między zamkiem a Jardins Brossa</div>
+      </div>
+    </div>
+    <div class="stop-body">
+      <p>Po wizycie w Castell zejdźcie pieszo ścieżkami przez <strong>Mirador del Migdia</strong> — najpiękniejszy punkt widokowy na morze. Wśród sosen i kaktusów. W dół, łatwe dla dziadków (ścieżka żwirowa, łagodny spadek, bez schodów).</p>
+
+      <div class="kids-box">
+        <span class="kids-label">Dla dzieci · KAKTUSY OPUNCJE</span>
+        <p>Po drodze widać <strong>kaktusy opuncje</strong> wysokości człowieka — wyglądają jak z meksykańskiej pustyni, ale rosną tu dzikie. <strong>Pomarańczowe lub fioletowe owoce można jeść</strong> — są słodkie! Ale uwaga: oprócz dużych kolców mają mikroskopijne włoski, które łatwo wbijają się w palce. <strong>Lepiej tylko podziwiać</strong>, owoce sprzedają w sklepach (już oczyszczone).</p>
+      </div>
+
+      <div class="adults-box">
+        <span class="adults-label">Cmentarz Montjuïc · widok poniżej</span>
+        <p>Stąd widać <strong>Cmentarz Montjuïc</strong> (po prawej, poniżej) — jeden z najpiękniejszych cmentarzy świata, z grobami <strong>wykutymi w skale</strong>. Spoczywa tu m.in.:</p>
+        <ul class="feature-list">
+          <li><strong>Joan Miró</strong> — malarz katalońskiego surrealizmu (1893-1983)</li>
+          <li><strong>Carmen Amaya</strong> — legendarna tancerka flamenco (1913-1963)</li>
+          <li><strong>Buenaventura Durruti</strong> — anarchistyczny lider wojny domowej (1896-1936)</li>
+          <li>Wielu katalońskich polityków, pisarzy, artystów</li>
+        </ul>
+        <p>Cmentarz Montjuïc jest <strong>otwarty dla zwiedzających</strong> codziennie, można po nim spacerować bez zezwolenia. To opcja na inny wyjazd — wśród spokoju i grobów wyrytych w skale.</p>
+      </div>
+    </div>
+  </article>
+
+  <article class="stop" id="stop-8">
+    <div class="stop-header">
+      <div class="stop-num">8</div>
+      <div class="stop-title-block">
+        <div class="stop-time">15:30-17:00 · Plac zabaw poety</div>
+        <h2>Jardins de Joan Brossa</h2>
+        <div class="stop-address">Park z najfajniejszym placem zabaw na trasie</div>
+      </div>
+    </div>
+    <div class="stop-body">
+      <p><strong>Wstęp wolny.</strong> Najfajniejszy plac zabaw na trasie zwiedzania całego wyjazdu.</p>
+
+      <div class="kids-box">
+        <span class="kids-label">Dla dzieci · RAJ</span>
+        <p>Co znajdziecie:</p>
+        <ul class="feature-list">
+          <li><strong>2 olbrzymie zjeżdżalnie</strong> — drewniane, długie, szybkie</li>
+          <li><strong>Tyrolka (kolejka na linie)</strong> — z bezpieczną uprzęży</li>
+          <li><strong>Drewniany tor wodny</strong> — w lecie z wodą, w maju zwykle suchy, ale i tak fajny</li>
+          <li><strong>Instrumenty muzyczne na świeżym powietrzu</strong> — ksylofony, dzwonki, bębny, możecie grać do woli</li>
+          <li><strong>Piaskownica i bujaki</strong> dla młodszych</li>
+        </ul>
+        <p>Konstrukcje drewniane, nowoczesne, dla dzieci 4-12 lat. Spokojnie godzina-półtorej zabawy.</p>
+      </div>
+
+      <div class="unusual-box">
+        <span class="unusual-label">Niespotykane · Kim był Joan Brossa</span>
+        <p>Park nosi imię katalońskiego poety <strong>Joana Brossy</strong> (1919-1998), <strong>wynalazcy „poezji wizualnej"</strong>. Brossa pisał wiersze... <strong>z przedmiotów</strong>, nie ze słów.</p>
+        <p><strong>Przykłady jego wierszy-rzeźb:</strong></p>
+        <ul class="feature-list">
+          <li>Pojedyncza litera „A" wykonana w drewnie wysokości 2 metrów</li>
+          <li>Bochenek chleba w kształcie przecinka</li>
+          <li>Sznurówka uwiązana na supeł, postawiona jako rzeźba</li>
+          <li>Łańcuch z liter układających się w słowo „WOLNOŚĆ" w 5 językach</li>
+        </ul>
+        <p>Brzmi dziwnie? Brossa twierdził, że <strong>poezja to nie tylko język — to każdy gest, każdy przedmiot</strong>. Jego prace są dziś w MoMA w Nowym Jorku, w Centre Pompidou w Paryżu, w Reina Sofia w Madrycie.</p>
+      </div>
+
+      <div class="adults-box">
+        <span class="adults-label">Park-poezja</span>
+        <p>Po parku porozrzucane są <strong>rzeźby-wiersze Brossy</strong>. Szukajcie ich między placami zabaw — to małe instalacje, łatwo je pominąć.</p>
+        <p>Park otwarto w <strong>2003 r.</strong> na miejscu dawnego parku rozrywki <strong>Maricel</strong> (otwartego 1929, zamkniętego 1998). Miasto zostawiło część konstrukcji jako dekoracja — jeśli się przyjrzycie, zobaczycie elementy starych karuzeli.</p>
+      </div>
+
+      <div class="kids-box">
+        <span class="kids-label">Zabawa dla 9-latki</span>
+        <p>Po zabawie, na ławce, niech narysuje <strong>swój własny wiersz wizualny</strong> — z linijek, ze stóp, z liści. Brossa twierdziłby, że to też poezja. Pokażcie mu/jej rezultat — śmiech gwarantowany.</p>
+      </div>
+    </div>
+  </article>
+
+  <div class="section-divider"><span>— Plaża + zachód słońca —</span></div>
+
+  <article class="stop" id="stop-9">
+    <div class="stop-header">
+      <div class="stop-num">9</div>
+      <div class="stop-title-block">
+        <div class="stop-time">17:00 · Zjazd na plażę</div>
+        <h2>Z Montjuïc do morza</h2>
+        <div class="stop-address">Funicular w dół + metro</div>
+      </div>
+    </div>
+    <div class="stop-body">
+      <p>Funikular w dół do <strong>Paral·lel</strong> → metro <strong>L3 → przesiadka L4 do Bogatell lub Ciutadella/Vila Olímpica</strong>. Razem ~30 min.</p>
+
+      <div class="adults-box">
+        <span class="adults-label">Niewiarygodne · plaża, której kiedyś nie było</span>
+        <p>Wysiadacie w sercu <strong>Vila Olímpica</strong> — dzielnicy zbudowanej na <strong>Igrzyska Olimpijskie 1992</strong>.</p>
+        <p><strong>Przed 1992 r. w tej dzielnicy nie było plaży!</strong> Cały obszar był <strong>przemysłowym portem z torami kolejowymi</strong> blokującymi dostęp do morza. Klasyczne XIX-wieczne miasto przemysłowe — fabryki, doki, węglowy dym. Mieszkańcy <strong>nie mieli dostępu do własnego wybrzeża</strong>.</p>
+        <p>Barcelona w 1992 r. <strong>zburzyła fabryki, wyrwała tory, importowała piasek z kamieniołomów</strong> i wybudowała <strong>4,5 km nowej plaży w 4 lata</strong>. To jeden z najbardziej udanych projektów urbanistycznych XX wieku — Olympics na zawsze zmieniły miasto.</p>
+      </div>
+    </div>
+  </article>
+
+  <article class="stop" id="stop-10">
+    <div class="stop-header">
+      <div class="stop-num">10</div>
+      <div class="stop-title-block">
+        <div class="stop-time">17:30 · Po drodze</div>
+        <h2>Peix d'Or — Złota Ryba Gehry'ego</h2>
+        <div class="stop-address">Esplanada plażowa, między Hotel Arts i plażą</div>
+      </div>
+    </div>
+    <div class="stop-body">
+      <p>Olbrzymia <strong>złota ryba ze stali</strong> nad esplanadą plażową. Trudno przeoczyć — <strong>56 m długości, 35 m wysokości</strong>. Można podejść pod spód.</p>
+
+      <div class="unusual-box">
+        <span class="unusual-label">Niespotykane · pierwsza rzeźba komputerowa</span>
+        <p>Rzeźbę zaprojektował <strong>Frank Gehry</strong> w 1992 r. — ten sam, który kilka lat później zrobił <strong>Muzeum Guggenheima w Bilbao</strong>. <strong>To była jego pierwsza praca w Europie</strong>.</p>
+        <p><strong>Najważniejsze:</strong> to jeden z <strong>pierwszych budynków na świecie zaprojektowanych komputerowo</strong>. Gehry użył oprogramowania <strong>CATIA</strong>, oryginalnie napisanego dla francuskich linii lotniczych do projektowania samolotów Mirage. <strong>Bez tego oprogramowania nie powstałby żaden zakrzywiony budynek Gehry'ego</strong> — w tym Guggenheim Bilbao, Walt Disney Concert Hall w Los Angeles, Dancing House w Pradze. Dziś każdy znaczący architekt używa podobnych narzędzi — wtedy to była rewolucja.</p>
+      </div>
+
+      <div class="kids-box">
+        <span class="kids-label">Dla dzieci · WYZWANIE</span>
+        <p>Ryba pokryta jest <strong>złotymi blaszkami ze stali nierdzewnej</strong>, każda inna. Spróbujcie znaleźć dwie identyczne — nie da się. Ryba <strong>zmienia kolor</strong> w zależności od pory dnia: rano złoty, w południe niemal biały, o zachodzie pomarańczowy. <strong>Wieczorem o 20:30 będzie najbardziej spektakularna.</strong></p>
+        <p>Ryba nie ma głowy ani ogona — Gehry nazwał to <strong>„abstrakcyjnym wyrazem ryby"</strong>, nie konkretną rybą. Wymagało to ośmieszenia tradycyjnej rzeźby figuratywnej. Krytycy w 1992 r. byli zdezorientowani, dziś to ikona miasta.</p>
+      </div>
+
+      <p>W tle: <strong>Hotel Arts</strong> (154 m) i <strong>Torre Mapfre</strong> (154 m, dokładnie tyle samo) — bliźniacze wieżowce z 1992 r. Na szczycie Hotel Arts jest restauracja z gwiazdką Michelin i pokoje za 600+ €/noc.</p>
+    </div>
+  </article>
+
+  <article class="stop" id="stop-11">
+    <div class="stop-header">
+      <div class="stop-num">11</div>
+      <div class="stop-title-block">
+        <div class="stop-time">17:30-19:30 · Wreszcie odpoczynek</div>
+        <h2>Plaża Nova Icària</h2>
+        <div class="stop-address">Najlepsza plaża Barcelony dla rodzin</div>
+      </div>
+    </div>
+    <div class="stop-body">
+      <p>Znacznie spokojniejsza niż zatłoczona Barceloneta, <strong>łagodne dno</strong> (dzieci wchodzą daleko bez głębokiej wody), <strong>plac zabaw bezpośrednio na piasku</strong>, korty siatkówki plażowej i ping-ponga, ratownicy, prysznice, dostępność dla wózków.</p>
+
+      <div class="unusual-box">
+        <span class="unusual-label">Niespotykane · plaża nazwana od utopii nazwanej od utopii</span>
+        <p>„Ikaria" pochodzi z <strong>utopijnej powieści francuskiego filozofa Étienne Cabeta</strong> z 1840 r. „<em>Voyage en Icarie</em>" — opisywał idealną wspólnotę bez własności prywatnej, gdzie wszyscy byliby równi, gdzie nikt nie byłby bogaty ani biedny.</p>
+        <p>W <strong>1848 r.</strong> (rok rewolucji w Europie) radykałowie w Barcelonie próbowali <strong>założyć tu prawdziwą „kolonię Ikaryjczyków"</strong> — utopijną wspólnotę w tej dzielnicy. Mieli mieszkać razem, dzielić pracę i pieniądze, hodować jedzenie. Eksperyment trwał <strong>kilka miesięcy</strong>, upadł, ale nazwa została.</p>
+        <p>Kiedy w 1992 r. zbudowano nową plażę, nazwano ją <strong>„Nova Icària"</strong> — <strong>nowa utopia na ruinach starej utopii</strong>. Plaża dosłownie zbudowana na marzeniu o lepszym świecie.</p>
+      </div>
+
+      <div class="kids-box">
+        <span class="kids-label">Dla dzieci · CO ROBIĆ</span>
+        <p>Woda w maju ma <strong>17-18°C</strong> — chłodna dla pływania, ale wystarczy do moczenia stóp i budowania zamków z piasku. Plac zabaw na plaży: huśtawki, drabinki, piaskownica.</p>
+        <p>Spróbujcie pograć w <strong>siatkówkę plażową</strong>, frisbee, lotki — lokalne dzieci grają tu codziennie. Można dołączyć do gry albo grać własnym składem.</p>
+      </div>
+
+      <div class="adults-box">
+        <span class="adults-label">Geograficzny ciekawostek</span>
+        <p><strong>Plaża jest zwrócona na południe</strong> — co jest <strong>nietypowe dla Barcelony</strong>. Większość plaż Costa Brava i Costa Daurada jest zwrócona na wschód (rano słońce, popołudniu cień od miasta), tu na południe (przez cały dzień słońce, wieczorem cieplej). Dlatego lokalsi z dziećmi przychodzą tutaj, nie do turystycznej Barcelonety.</p>
+        <p><strong>Zachód słońca</strong> w maju ok. 21:00 — ostatnie godziny dnia są ciepłe, wieczór długi, miasto się rozluźnia.</p>
+      </div>
+    </div>
+  </article>
+
+  <article class="stop" id="stop-12">
+    <div class="stop-header">
+      <div class="stop-num">12</div>
+      <div class="stop-title-block">
+        <div class="stop-time">19:30-21:00 · KOLACJA NAD MORZEM</div>
+        <h2>Xiringuito Escribà lub La Mar Salada</h2>
+        <div class="stop-address">Paella z atramentem kalmara o zachodzie słońca</div>
+      </div>
+    </div>
+    <div class="stop-body">
+
+      <p class="section-tag">Opcja 1: Xiringuito Escribà</p>
+      <p><strong>Ronda Litoral 42, plaża Bogatell</strong> · 10 min spacerem plażą na północ · ocena 4,3+</p>
+      <p>Legendarne. Założone w 1992 r. przez słynną katalońską rodzinę <strong>Escribà</strong> (znaną z pasztetów, czekoladek i wielkanocnych mona). <strong>Paella czarnego ryżu (arròs negre)</strong> z atramentem kalmara to ich klasyk. <strong>Paella seafood ~22-25 €/os.</strong> Bardzo popularne, kolejka po 20:00 standardowo. Warto zarezerwować na dzień przed.</p>
+
+      <p class="section-tag">Opcja 2: La Mar Salada</p>
+      <p><strong>Passeig Joan de Borbó 58-59, Barceloneta</strong> · taksówka 5 min albo metro L4 · ocena 4,1</p>
+      <p>Szef kuchni <strong>po El Bulli</strong> — najsłynniejsza restauracja świata Ferrana Adrii, zamknięta 2011. Lepszy stosunek jakości do ceny niż większość turystycznych miejsc w Barcelonecie. <strong>Paella ~22 €/os.</strong>, mniej tłoczno niż Xiringuito, atmosfera bardziej skupiona na jedzeniu.</p>
+
+      <div class="unusual-box">
+        <span class="unusual-label">Niespotykane · słownik katalońskiej rybnej kuchni</span>
+        <ul class="feature-list">
+          <li><strong>Xiringuito</strong> = beach bar/restauracja. Słowo pochodzi z <strong>kubańskiego hiszpańskiego</strong> — gdy Hiszpanie wracali z kolonii w XIX w., przywieźli słowo dla małych nadmorskich knajpek.</li>
+          <li><strong>Arròs negre</strong> = czarny ryż z atramentem kalmara. <strong>NIE jest brudny</strong> — atrament dodaje delikatnego morskiego smaku, lekko słodkawego. Najbardziej kataloński z dań.</li>
+          <li><strong>Arròs a banda</strong> = ryż gotowany w bulionie rybnym, podawany OBOK owoców morza (a banda = osobno). Z tradycji rybaków, którzy gotowali ryż w wodzie z gotowania ryb, a rybę jedli osobno.</li>
+          <li><strong>Fideuà</strong> = jak paella, ale zamiast ryżu cienki makaron. Wynaleziona przypadkiem przez rybaków, którym skończył się ryż.</li>
+          <li><strong>Suquet de peix</strong> = gulasz rybny katalońskich rybaków. Niedoceniana klasyka, kremowy, ziemniaki, czosnek, biała ryba.</li>
+        </ul>
+      </div>
+
+      <p class="section-tag">Plan zamówienia dla 6 osób</p>
+      <ul class="menu-list">
+        <li><strong>Dwie różne arròs do podzielenia</strong> — jedna z owocami morza, jedna czarna (arròs negre). Po ~22-25 €/os.</li>
+        <li><strong>Escalivada</strong> — warzywa grillowane (papryka, bakłażan, cebula), kataloński klasyk</li>
+        <li><strong>Pa amb tomàquet</strong> — obowiązkowy chleb z pomidorem (×2-3 sztuki)</li>
+        <li><strong>Cava</strong> dla dorosłych — kataloński szampan</li>
+        <li><strong>Crema catalana</strong> na deser × 6</li>
+      </ul>
+      <p><strong>Razem ~150-180 €</strong> z napojami dla całej rodziny.</p>
+    </div>
+  </article>
+
+  <article class="stop" id="stop-13">
+    <div class="stop-header">
+      <div class="stop-num">13</div>
+      <div class="stop-title-block">
+        <div class="stop-time">21:00-21:30 · Koniec dnia</div>
+        <h2>Powrót do hotelu</h2>
+        <div class="stop-address">Metro L4 + L1 lub taksówka</div>
+      </div>
+    </div>
+    <div class="stop-body">
+      <p>Metro <strong>L4 z Bogatell albo Ciutadella/Vila Olímpica → przesiadka L1 → Rocafort</strong>, ~25 min.</p>
+      <p>Alternatywnie <strong>taksówka 12-15 €</strong> bezpośrednio do hotelu (15 min) — po długim dniu i pełnym kolacji warto.</p>
+
+      <p style="margin-top: 1.5rem; font-style: italic; color: var(--ink-soft); text-align: center;">
+        Plan jutra: Las Ramblas, Boqueria, Gothic Quarter, obiad El Born, pociąg z Sants na lotnisko. Pobudka 7:30, wymeldowanie 8:30. Spokojnej nocy — to ostatnia noc w Barcelonie.
+      </p>
+    </div>
+  </article>
+
+</main>
+
+<footer>
+  <p class="planned-by">Poniedziałek 18 maja 2026</p>
+  <p class="meta">Najintensywniejszy dzień wyjazdu, ale logicznie ułożony: kultura rano, krajobrazy w południe, plaża wieczorem. Pamiętajcie o butach trekkingowych, kremie SPF 50+, butelce z wodą i lekkiej kurtce na wieczór nad morzem.</p>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const stops = [
+  { id: 0, lat: 41.37934, lng: 2.15212, type: 'hotel', label: 'H', name: 'Sweett Rocafort', time: '8:00 · Start', brief: 'Wcześniejsze śniadanie, wyjście 8:30. Slot Sagrady o 9:00.' },
+  { id: 1, lat: 41.40361, lng: 2.17427, type: 'mega', label: '1', name: 'Sagrada Familia', time: '9:00 ⭐ 100. rocznica Gaudíego', brief: 'Wejście od Carrer de la Marina. Audioguide po polsku w aplikacji. 2 godziny.' },
+  { id: 2, lat: 41.40561, lng: 2.17536, type: 'pass', label: '2', name: 'Avinguda de Gaudí', time: '11:00', brief: 'Pieszy bulwar między dwoma UNESCO. Po drodze do obiadu.' },
+  { id: 3, lat: 41.40556, lng: 2.17742, type: 'food', label: '3', name: 'El Tastet / El Glop', time: '11:00 OBIAD', brief: 'Fricandó w El Tastet albo paella w El Glop. 18-22 €/os.' },
+  { id: 4, lat: 41.37431, lng: 2.16215, type: 'pass', label: '4', name: 'Funicular de Montjuïc', time: '12:45', brief: 'Pociąg pod kątem 45° z Paral·lel w górę. W T-Familiar.' },
+  { id: 5, lat: 41.36443, lng: 2.16188, type: 'sight', label: '5', name: 'Telèferic de Montjuïc', time: '13:00', brief: 'Szklane gondole, 8 min, panorama portu. Osobny bilet ~80-90 € rodzina.' },
+  { id: 6, lat: 41.36347, lng: 2.16596, type: 'mega', label: '6', name: 'Castell de Montjuïc', time: '13:15 ⭐', brief: 'XVII-wieczna twierdza. Mroczna historia: stąd Franco rozstrzelał Companysa.' },
+  { id: 7, lat: 41.36126, lng: 2.16730, type: 'pass', label: '7', name: 'Mirador del Migdia', time: '15:00', brief: 'Zejście wśród sosen i kaktusów opuncji. Widok cmentarza Montjuïc.' },
+  { id: 8, lat: 41.36500, lng: 2.16100, type: 'park', label: '8', name: 'Jardins de Joan Brossa', time: '15:30', brief: 'Plac zabaw poety: tyrolka, zjeżdżalnie, instrumenty muzyczne. Wstęp wolny.' },
+  { id: 9, lat: 41.38500, lng: 2.19000, type: 'pass', label: '9', name: 'Zjazd na plażę', time: '17:00', brief: 'Funicular + metro do Bogatell/Vila Olímpica. ~30 min.' },
+  { id: 10, lat: 41.38690, lng: 2.19751, type: 'sight', label: '10', name: 'Peix d\'Or (Złota Ryba)', time: '17:30', brief: 'Pierwsza rzeźba Frank Gehry\'ego komputerowo zaprojektowana, 1992 r.' },
+  { id: 11, lat: 41.38860, lng: 2.20030, type: 'park', label: '11', name: 'Plaża Nova Icària', time: '17:30 RELAKS', brief: 'Najlepsza plaża dla rodzin. Nazwa od utopijnej kolonii z 1848 r.' },
+  { id: 12, lat: 41.39150, lng: 2.20475, type: 'food', label: '12', name: 'Xiringuito Escribà / La Mar Salada', time: '19:30 KOLACJA', brief: 'Paella czarnego ryżu nad morzem. ~22-25 €/os.' },
+  { id: 13, lat: 41.37934, lng: 2.15212, type: 'hotel', label: 'H', name: 'Powrót do hotelu', time: '21:00-21:30', brief: 'Metro L4 + L1 lub taksówka 12-15 €.' }
+];
+
+const map = L.map('map', { zoomControl: true, scrollWheelZoom: false }).setView([41.385, 2.180], 13);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  maxZoom: 19
+}).addTo(map);
+
+// Walking + transport route — connecting the major points
+const dayRoute = [
+  [41.37934, 2.15212], // hotel
+  [41.40361, 2.17427], // Sagrada
+  [41.40556, 2.17742], // Obiad
+  [41.37431, 2.16215], // Funicular
+  [41.36443, 2.16188], // Telèferic bottom
+  [41.36347, 2.16596], // Castell
+  [41.36126, 2.16730], // Mirador
+  [41.36500, 2.16100], // Jardins Brossa
+  [41.38690, 2.19751], // Peix d'Or
+  [41.38860, 2.20030], // Plaża
+  [41.39150, 2.20475], // Kolacja
+  [41.37934, 2.15212]  // hotel
+];
+
+L.polyline(dayRoute, {
+  color: '#c45a3e',
+  weight: 4,
+  opacity: 0.7,
+  dashArray: '8, 8',
+  lineCap: 'round'
+}).addTo(map);
+
+stops.forEach(stop => {
+  const markerType = stop.type === 'mega' ? 'mega' : stop.type;
+  const icon = L.divIcon({
+    className: '',
+    html: `<div class="custom-marker ${markerType}">${stop.label}</div>`,
+    iconSize: stop.type === 'mega' ? [42, 42] : [32, 32],
+    iconAnchor: stop.type === 'mega' ? [21, 21] : [16, 16]
+  });
+
+  const popupContent = `
+    <strong>${stop.name}</strong>
+    <div style="color: #d4a949; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.4rem;">${stop.time}</div>
+    <div>${stop.brief}</div>
+    <a href="#stop-${stop.id}" class="popup-link" onclick="highlightStop(${stop.id})">Czytaj więcej →</a>
+  `;
+
+  L.marker([stop.lat, stop.lng], { icon })
+    .addTo(map)
+    .bindPopup(popupContent, { maxWidth: 280 });
+});
+
+const bounds = L.latLngBounds(stops.map(s => [s.lat, s.lng]));
+map.fitBounds(bounds, { padding: [40, 40] });
+
+window.highlightStop = function(id) {
+  document.querySelectorAll('.stop').forEach(el => el.classList.remove('highlight'));
+  const target = document.getElementById('stop-' + id);
+  if (target) {
+    target.classList.add('highlight');
+    setTimeout(() => target.classList.remove('highlight'), 2500);
+  }
+};
+
+map.on('click', () => map.scrollWheelZoom.enable());
+</script>
+
+</body>
+</html>
